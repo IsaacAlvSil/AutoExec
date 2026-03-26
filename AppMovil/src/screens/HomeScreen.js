@@ -13,7 +13,7 @@ export default function HomeScreen() {
 
     const obtenerVacantes = async () => {
         try {
-            const respuesta = await fetch('http://10.16.36.91:8000/api/vacantes');
+            const respuesta = await fetch('http://192.168.1.72:5000/api/vacantes');
             const datos = await respuesta.json();
 
             setVacantes(datos); // Guardamos los datos de la API en el estado

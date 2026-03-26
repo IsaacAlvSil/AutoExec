@@ -1,19 +1,16 @@
 from fastapi import FastAPI
+from data.database import engine
+from models import models
+from routers import vacantes
 
-app = FastAPI(title="API Radar Automotriz")
+# Crea las tablas en la BD
+models.Base.metadata.create_all(bind=engine)
+
+app = FastAPI(title="API AutoExec")
+
+# Conectamos el router de vacantes a la app principal
+app.include_router(vacantes.router)
 
 @app.get("/")
 def read_root():
-    return {"mensaje": "¡La API FastAPI está corriendo al 100%!"}
-
-@app.get("/api/vacantes")
-def get_vacantes():
-    # Más adelante, esto vendrá de PostgreSQL. Por ahora es un dato de prueba.
-    return [
-        {
-            "id": 1, 
-            "title": "Director de Operaciones", 
-            "company": "AutoMotors SA",
-            "urgent": True
-        }
-    ]
+    return {"mensaje": "¡FastAPI funcionando!"}
