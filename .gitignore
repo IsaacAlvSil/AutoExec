@@ -1,0 +1,16 @@
+# Dependencias de Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Archivos de Expo
+.expo/
+dist/
+web-build/
+
+# Entornos virtuales de Python (Para tu backend más adelante)
+__pycache__/
+*.py[cod]
+.env
+venv/
+env/
