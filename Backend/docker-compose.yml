@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secretpassword
+      POSTGRES_DB: automotriz_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build: .
+    container_name: fastapi_app
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      # Así es como FastAPI sabrá cómo conectarse a Postgres después
+      - DATABASE_URL=postgresql://admin:secretpassword@db:5432/automotriz_db
+    depends_on:
+      - db
+    volumes:
+      - .:/app # Esto sincroniza tu código en tiempo real sin tener que reiniciar el contenedor
+
+volumes:
+  postgres_data: # Esto evita que tu base de datos se borre si apagas el contenedor
