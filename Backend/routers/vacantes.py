@@ -1,21 +1,14 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from data.database import SessionLocal
+from data.db import get_db
 from models import models
+
 
 # Creamos el router (un mini-main.py exclusivo para vacantes)
 router = APIRouter(
     prefix="/api/vacantes",
     tags=["Vacantes"]
 )
-
-# Dependencia de la base de datos
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 # 🟢 LEER VACANTES
 @router.get("/")
