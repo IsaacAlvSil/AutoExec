@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from data.database import SessionLocal
+from data.db import SessionLocal
 from models import models
 
 # Creamos el router (un mini-main.py exclusivo para vacantes)

@@ -10,6 +10,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import RequestsScreen from '../screens/RequestsScreen';
 import DVacante from '../screens/DVacante';
+import VacantesScreen from '../screens/VacantesScreen';
 import RadarScreen from '../screens/RadarScreen';
 import RecoverPasswordScreen from '../screens/RecoverPasswordScreen';
 
@@ -35,7 +36,7 @@ function MainTabs({ onLogout }) {
             })}
         >
             <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Dashboard' }} />
-            <Tab.Screen name="Solicitudes" component={RequestsScreen} options={{ title: 'Vacantes' }} />
+            <Tab.Screen name="Solicitudes" component={VacantesScreen} options={{ title: 'Vacantes' }} />
             <Tab.Screen name="Notificaciones" component={NotificationsScreen} />
 
             <Tab.Screen name="Perfil">

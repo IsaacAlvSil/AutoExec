@@ -1,49 +1,127 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, SafeAreaView } from 'react-native';
 
-export default function HomeScreen() {
-    // 1. Creamos los estados para guardar las vacantes y el estado de carga
+const HomeScreen = ({ navigation }) => {
     const [vacantes, setVacantes] = useState([]);
-    const [cargando, setCargando] = useState(true);
+    const [loading, setLoading] = useState(true);
 
-    // 2. Usamos useEffect para llamar a la API justo cuando la pantalla se abre
     useEffect(() => {
-        obtenerVacantes();
+        fetchVacantes();
     }, []);
 
-    const obtenerVacantes = async () => {
+    const fetchVacantes = async () => {
         try {
-            const respuesta = await fetch('http://192.168.1.72:5000/api/vacantes');
-            const datos = await respuesta.json();
-
-            setVacantes(datos); // Guardamos los datos de la API en el estado
-            setCargando(false); // Apagamos el símbolo de carga
+            // Recuerda: usa tu IP (ej. 192.168.1.X:5000) si usas celular físico
+            // o 10.0.2.2:5000 si usas el emulador de Android Studio
+            const response = await fetch('http://192.168.1.72:5000/api/vacantes');
+            const data = await response.json();
+            setVacantes(data);
         } catch (error) {
-            console.error("Error conectando con la API:", error);
-            setCargando(false);
+            console.error("Error al cargar vacantes en Home:", error);
+        } finally {
+            setLoading(false);
         }
     };
 
-    // 3. Mostramos un "Cargando..." mientras llegan los datos
-    if (cargando) {
-        return <ActivityIndicator size="large" color="#0000ff" style={{ flex: 1, justifyContent: 'center' }} />;
+    if (loading) {
+        return (
+            <View style={styles.center}>
+                <ActivityIndicator size="large" color="#002E5D" />
+                <Text style={{ marginTop: 10, color: '#666' }}>Cargando tu dashboard...</Text>
+            </View>
+        );
     }
 
-    // 4. Mostramos la lista real que viene desde tu backend
     return (
-        <View style={{ flex: 1, padding: 20 }}>
-            <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 15 }}>Vacantes Disponibles</Text>
+        <SafeAreaView style={styles.container}>
+            <View style={styles.header}>
+                <Text style={styles.greeting}>¡Hola de nuevo!</Text>
+                <Text style={styles.subtitle}>Aquí tienes las vacantes más recientes</Text>
+            </View>
 
             <FlatList
                 data={vacantes}
                 keyExtractor={(item) => item.id.toString()}
+                showsVerticalScrollIndicator={false}
                 renderItem={({ item }) => (
-                    <View style={{ padding: 15, backgroundColor: '#f9f9f9', marginBottom: 10, borderRadius: 8 }}>
-                        <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{item.title}</Text>
-                        <Text style={{ fontSize: 16, color: 'gray' }}>{item.company}</Text>
-                    </View>
+                    <TouchableOpacity
+                        style={styles.card}
+                        activeOpacity={0.7}
+                        onPress={() => navigation.navigate('DVacante', { vacante: item })}
+                    >
+                        <Text style={styles.jobTitle}>{item.title}</Text>
+                        <Text style={styles.company}>{item.company}</Text>
+                        {item.urgent && (
+                            <View style={styles.badge}>
+                                <Text style={styles.badgeText}>¡Urgente!</Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
                 )}
             />
-        </View>
+        </SafeAreaView>
     );
-}
+};
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#F1F5F9',
+        paddingHorizontal: 20,
+    },
+    center: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#F1F5F9'
+    },
+    header: {
+        marginVertical: 20,
+    },
+    greeting: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: '#0F172A'
+    },
+    subtitle: {
+        fontSize: 16,
+        color: '#64748B',
+        marginTop: 5,
+    },
+    card: {
+        backgroundColor: 'white',
+        padding: 18,
+        borderRadius: 16,
+        marginBottom: 15,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+    },
+    jobTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#0F172A'
+    },
+    company: {
+        fontSize: 15,
+        color: '#64748B',
+        marginTop: 6
+    },
+    badge: {
+        backgroundColor: '#EF4444',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 6,
+        alignSelf: 'flex-start',
+        marginTop: 10
+    },
+    badgeText: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: 'bold'
+    }
+});
+
+export default HomeScreen;
