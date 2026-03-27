@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from data.db import engine
+from data.database import engine
 from models import models
 from routers import vacantes
 
