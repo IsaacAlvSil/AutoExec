@@ -13,12 +13,12 @@ router = APIRouter(
 # 🟢 LEER VACANTES
 @router.get("/")
 def get_vacantes(db: Session = Depends(get_db)):
-    return db.query(usuario.Vacante).all()
+    return db.query(models.Vacante).all()
 
 # 🔵 CREAR VACANTE
 @router.post("/")
 def crear_vacante(title: str, company: str, urgent: bool = False, db: Session = Depends(get_db)):
-    nueva_vacante = usuario.Vacante(title=title, company=company, urgent=urgent)
+    nueva_vacante = models.Vacante(title=title, company=company, urgent=urgent)
     db.add(nueva_vacante)
     db.commit()
     db.refresh(nueva_vacante)

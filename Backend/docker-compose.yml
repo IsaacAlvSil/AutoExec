@@ -12,22 +12,33 @@ services:
     ports:
       - "5434:5432"
     volumes:
-      - postgres_data_v2:/var/lib/postgresql/data 
+      - postgres_data_v2:/var/lib/postgresql/data
+    networks:
+      - autoexec-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d automotriz_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-  api:   
+  api:
     build: .
     container_name: fastapi_app
     restart: always
     ports:
-      - "5000:8000"  
+      - "5000:8000"
     environment:
-      # Así es como FastAPI sabrá cómo conectarse a Postgres después
-      - DATABASE_URL=postgresql://admin:123456@db:5432/automotriz_db
+      DATABASE_URL: postgresql://admin:123456@db:5432/automotriz_db
     depends_on:
-      - db
+      db:
+        condition: service_healthy   # ← espera a que Postgres esté LISTO
     volumes:
-      - .:/app # Esto sincroniza tu código en tiempo real sin tener que reiniciar el contenedor
+      - .:/app
+    networks:
+      - autoexec-net
 
 volumes:
-  postgres_data_v2: 
-  # Esto evita que tu base de datos se borre si apagas el contenedor
+  postgres_data_v2:
+
+networks:
+  autoexec-net:

@@ -2,7 +2,7 @@
 FROM python:3.11-slim
 
 # Le decimos a Docker en qué carpeta trabajar adentro del contenedor
-WORKDIR /app
+WORKDIR /Backend
 
 # Copiamos las dependencias y las instalamos
 COPY requirements.txt .
@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Exponemos el puerto de FastAPI
-EXPOSE 5000
+EXPOSE 8000
 
 # Comando para encender el servidor con recarga automática
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000", "--reload"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
