@@ -1,0 +1,29 @@
+services:
+  db:
+    image: postgres:15
+    container_name: autoexec_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: autoexec
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: ./backend
+    container_name: autoexec_api
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend
+    container_name: autoexec_web
+    ports:
+      - "8081:80"   #  ESTE ES EL IMPORTANTE
+    volumes:
+      - ./frontend:/var/www/html
+    depends_on:
+      - backend 
