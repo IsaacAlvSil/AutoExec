@@ -1,126 +1,303 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, ActivityIndicator, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// 🚨 PON TU IP AQUÍ (Ejemplo: 'http://192.168.1.75:5000')
+const API_URL = 'http://10.16.35.92:5000';
 
 const HomeScreen = ({ navigation }) => {
+    // Estados para guardar las vacantes reales y controlar la pantalla de carga
     const [vacantes, setVacantes] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const [userName, setUserName] = useState('Usuario');
+    const [userInitials, setUserInitials] = useState('U');
+
+    // useEffect se ejecuta automáticamente cuando entras a esta pantalla
     useEffect(() => {
         fetchVacantes();
+        cargarDatosUsuario();
     }, []);
 
-    const fetchVacantes = async () => {
+    const cargarDatosUsuario = async () => {
         try {
-            // Recuerda: usa tu IP (ej. 192.168.1.X:5000) si usas celular físico
-            // o 10.0.2.2:5000 si usas el emulador de Android Studio
-            const response = await fetch('http://192.168.1.72:5000/api/vacantes');
-            const data = await response.json();
-            setVacantes(data);
+            // Buscamos la clave EXACTA que guardamos en el Login
+            const storedEmail = await AsyncStorage.getItem('user_email');
+
+            if (storedEmail) {
+                // Cortamos el texto antes del '@' (ej. isaac.perez@empresa.com -> isaac.perez)
+                const emailName = storedEmail.split('@')[0];
+
+                // Capitalizamos la primera letra por estética (Opcional, pero se ve mejor)
+                const nombreFormateado = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+
+                setUserName(nombreFormateado);
+                setUserInitials(nombreFormateado.substring(0, 2).toUpperCase());
+            }
         } catch (error) {
-            console.error("Error al cargar vacantes en Home:", error);
-        } finally {
-            setLoading(false);
+            console.error('Error cargando usuario:', error);
         }
     };
 
-    if (loading) {
-        return (
-            <View style={styles.center}>
-                <ActivityIndicator size="large" color="#002E5D" />
-                <Text style={{ marginTop: 10, color: '#666' }}>Cargando tu dashboard...</Text>
-            </View>
-        );
-    }
+    const fetchVacantes = async () => {
+        try {
+            // 👇 Asumo que tu ruta en FastAPI se llama /api/vacantes (Verifícalo en tu Swagger)
+            const response = await fetch(`${API_URL}/api/vacantes`);
+            const data = await response.json();
+
+            if (response.ok) {
+                setVacantes(data); // Guardamos las vacantes de la BD en nuestro estado
+            } else {
+                Alert.alert('Error', 'No se pudieron cargar las vacantes');
+            }
+        } catch (error) {
+            console.error('Error fetching vacantes:', error);
+            Alert.alert('Error de conexión', 'Revisa que tu servidor esté encendido y la IP sea correcta.');
+        } finally {
+            setLoading(false); // Apagamos la ruedita de carga
+        }
+    };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.greeting}>¡Hola de nuevo!</Text>
-                <Text style={styles.subtitle}>Aquí tienes las vacantes más recientes</Text>
-            </View>
+        <SafeAreaView style={styles.safeArea}>
+            <ScrollView style={styles.mainContainer} showsVerticalScrollIndicator={false}>
 
-            <FlatList
-                data={vacantes}
-                keyExtractor={(item) => item.id.toString()}
-                showsVerticalScrollIndicator={false}
-                renderItem={({ item }) => (
-                    <TouchableOpacity
-                        style={styles.card}
-                        activeOpacity={0.7}
-                        onPress={() => navigation.navigate('DVacante', { vacante: item })}
-                    >
-                        <Text style={styles.jobTitle}>{item.title}</Text>
-                        <Text style={styles.company}>{item.company}</Text>
-                        {item.urgent && (
-                            <View style={styles.badge}>
-                                <Text style={styles.badgeText}>¡Urgente!</Text>
-                            </View>
-                        )}
+                {/* 👇 5. Sección de Saludo y Avatar DINÁMICA */}
+                <View style={styles.greetingSection}>
+                    <View>
+                        {/* Imprimimos la variable userName */}
+                        <Text style={styles.greetingText}>Hola, {userName}</Text>
+                        <Text style={styles.subtitleText}>Tu radar ejecutivo está activo</Text>
+                    </View>
+                    <View style={styles.avatarContainer}>
+                        {/* Imprimimos la variable userInitials */}
+                        <Text style={styles.avatarText}>{userInitials}</Text>
+                    </View>
+                </View>
+
+                {/* Sección de Métricas (Tarjetas) */}
+                <View style={styles.metricsRow}>
+                    <View style={styles.metricCard}>
+                        <Ionicons name="eye-outline" size={24} color="#3B82F6" style={styles.metricIcon} />
+                        <Text style={styles.metricNumber}>18</Text>
+                        <Text style={styles.metricLabel}>Vistas a tu{'\n'}perfil</Text>
+                    </View>
+                    <View style={styles.metricCard}>
+                        <Ionicons name="search-outline" size={24} color="#10B981" style={styles.metricIcon} />
+                        <Text style={styles.metricNumber}>5</Text>
+                        <Text style={styles.metricLabel}>Búsquedas{'\n'}Top</Text>
+                    </View>
+                    <View style={styles.metricCard}>
+                        <Ionicons name="briefcase-outline" size={24} color="#F59E0B" style={styles.metricIcon} />
+                        <Text style={styles.metricNumber}>2</Text>
+                        <Text style={styles.metricLabel}>Procesos{'\n'}Activos</Text>
+                    </View>
+                </View>
+
+                {/* Sección de Oportunidades */}
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Oportunidades Top Match</Text>
+                    <TouchableOpacity onPress={() => navigation.navigate('Solicitudes')}>
+                        <Text style={styles.seeAllText}>Ver todas</Text>
                     </TouchableOpacity>
-                )}
-            />
+                </View>
+
+                {/* Lista de Tarjetas de Vacantes desde la Base de Datos */}
+                {/* Lista de Tarjetas de Vacantes */}
+                <View style={styles.vacanciesContainer}>
+                    {loading ? (
+                        <ActivityIndicator size="large" color="#3B82F6" style={{ marginTop: 20 }} />
+                    ) : (
+                        vacantes.length > 0 ? (
+                            vacantes.map((job, index) => (
+                                // 👇 CAMBIO AQUÍ: Envolvemos la tarjeta en un TouchableOpacity
+                                <TouchableOpacity
+                                    key={job.id_vacante || index.toString()}
+                                    style={styles.jobCard}
+                                    activeOpacity={0.8}
+                                    // 👇 ESTA ES LA MAGIA: Navega y envía el objeto 'job' completo
+                                    onPress={() => navigation.navigate('DVacante', { vacante: job })}
+                                >
+                                    <View style={styles.jobHeader}>
+                                        <Text style={styles.jobTitle}>{job.titulo}</Text>
+                                        <View style={styles.matchBadge}>
+                                            <Text style={styles.matchText}>Nuevo</Text>
+                                        </View>
+                                    </View>
+
+                                    <Text style={styles.jobLocation}>Sueldo: ${job.salario_ofrecido}</Text>
+                                    <Text style={styles.jobDescription} numberOfLines={3}>
+                                        {job.descripcion}
+                                    </Text>
+
+                                    <View style={styles.tagsRow}>
+                                        <View style={styles.tagBadge}>
+                                            <Text style={styles.tagText}>{job.estado}</Text>
+                                        </View>
+                                    </View>
+                                </TouchableOpacity>
+                            ))
+                        ) : (
+                            <Text style={{ color: '#94A3B8', textAlign: 'center', marginTop: 20 }}>
+                                No hay vacantes disponibles.
+                            </Text>
+                        )
+                    )}
+                </View>
+
+                <View style={{ height: 40 }} />
+            </ScrollView>
         </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    safeArea: {
         flex: 1,
-        backgroundColor: '#F1F5F9',
-        paddingHorizontal: 20,
+        backgroundColor: '#FFFFFF',
+        paddingTop: Platform.OS === 'android' ? 25 : 0,
     },
-    center: {
+    mainContainer: {
         flex: 1,
-        justifyContent: 'center',
+        backgroundColor: '#0F172A',
+    },
+    greetingSection: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: '#F1F5F9'
+        paddingHorizontal: 20,
+        paddingTop: 30,
+        paddingBottom: 20,
     },
-    header: {
-        marginVertical: 20,
-    },
-    greeting: {
+    greetingText: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: '#0F172A'
+        color: '#FFFFFF',
+        marginBottom: 4,
     },
-    subtitle: {
-        fontSize: 16,
-        color: '#64748B',
-        marginTop: 5,
+    subtitleText: {
+        fontSize: 14,
+        color: '#94A3B8',
     },
-    card: {
-        backgroundColor: 'white',
-        padding: 18,
+    avatarContainer: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: '#3B82F6',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    avatarText: {
+        color: '#FFFFFF',
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    metricsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        marginBottom: 30,
+    },
+    metricCard: {
+        backgroundColor: '#1E293B',
         borderRadius: 16,
+        padding: 15,
+        width: '31%',
+        alignItems: 'center',
+    },
+    metricIcon: {
+        marginBottom: 8,
+    },
+    metricNumber: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#FFFFFF',
+        marginBottom: 4,
+    },
+    metricLabel: {
+        fontSize: 11,
+        color: '#94A3B8',
+        textAlign: 'center',
+    },
+    sectionHeader: {
+        paddingHorizontal: 20,
         marginBottom: 15,
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
+    },
+    sectionTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#FFFFFF',
+        marginBottom: 5,
+    },
+    seeAllText: {
+        fontSize: 14,
+        color: '#3B82F6',
+        fontWeight: '600',
+    },
+    vacanciesContainer: {
+        paddingHorizontal: 20,
+    },
+    jobCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 20,
+        marginBottom: 15,
+    },
+    jobHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 8,
     },
     jobTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#0F172A'
+        color: '#0F172A',
+        flex: 1,
+        marginRight: 10,
     },
-    company: {
-        fontSize: 15,
-        color: '#64748B',
-        marginTop: 6
-    },
-    badge: {
-        backgroundColor: '#EF4444',
+    matchBadge: {
+        backgroundColor: '#D1FAE5',
         paddingHorizontal: 10,
         paddingVertical: 4,
-        borderRadius: 6,
-        alignSelf: 'flex-start',
-        marginTop: 10
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#10B981',
     },
-    badgeText: {
-        color: 'white',
+    matchText: {
+        color: '#059669',
         fontSize: 12,
-        fontWeight: 'bold'
+        fontWeight: 'bold',
+    },
+    jobLocation: {
+        fontSize: 14,
+        color: '#64748B',
+        marginBottom: 12,
+    },
+    jobDescription: {
+        fontSize: 14,
+        color: '#334155',
+        lineHeight: 20,
+        marginBottom: 15,
+    },
+    tagsRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+    },
+    tagBadge: {
+        backgroundColor: '#F1F5F9',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
+        marginRight: 8,
+        marginBottom: 8,
+    },
+    tagText: {
+        fontSize: 12,
+        color: '#475569',
+        fontWeight: '500',
     }
 });
 

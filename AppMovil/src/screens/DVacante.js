@@ -1,193 +1,147 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const DVacante = ({ route, navigation }) => {
+    // Recibimos la vacante con la nueva estructura limpia desde la BDD
+    const { vacante } = route.params || {};
 
-    const { vacante } = route.params || {
-        vacante: {
-            title: 'Director de Operaciones',
-            company: 'AutoMotors SA',
-            location: 'Ciudad de México',
-            salary: '$180,000 - $220,000 MXN',
-            type: 'Tiempo Completos',
-            urgent: true,
-            time: 'Hace 3 días',
-            applicants: '12',
-        }
-    };
-
-    const handlePostulacion = () => {
+    const handleApply = () => {
         Alert.alert(
             "¡Postulación Exitosa!",
-            `Tu CV ha sido enviado correctamente para la vacante de ${vacante.title} en ${vacante.company}.`,
-            [
-                {
-                    text: "Excelente",
-                    style: "default",
-                }
-            ]
+            `Te has postulado correctamente para la vacante: ${vacante.titulo}. El equipo de reclutamiento revisará tu perfil.`,
+            [{ text: "Entendido", onPress: () => navigation.goBack() }]
         );
     };
 
+    if (!vacante) {
+        return (
+            <View style={styles.center}>
+                <Text style={{ color: '#FFFFFF' }}>Cargando información...</Text>
+            </View>
+        );
+    }
+
     return (
-        <SafeAreaView style={styles.mainContainer}>
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <SafeAreaView style={styles.safeArea}>
+            <LinearGradient colors={['#0F172A', '#1E293B']} style={styles.container}>
+                {/* Header */}
 
 
-                <View style={styles.card}>
-                    <View style={styles.headerRow}>
-                        <View style={styles.iconBox}>
-                            <MaterialCommunityIcons name="office-building" size={40} color="#334155" />
-                        </View>
-                        <View style={styles.headerText}>
-                            <Text style={styles.jobTitle}>{vacante.title}</Text>
-                            <Text style={styles.companyName}>{vacante.company}</Text>
-                            {vacante.urgent && (
-                                <View style={styles.urgentBadge}>
-                                    <Text style={styles.urgentText}>Urgente</Text>
-                                </View>
-                            )}
-                        </View>
-                    </View>
-
-                    <View style={styles.infoList}>
-                        <View style={styles.detailRow}>
-                            <Ionicons name="location-outline" size={18} color="#64748B" />
-                            <Text style={styles.detailValue}>{vacante.location}</Text>
-                        </View>
-                        <View style={styles.detailRow}>
-                            <Ionicons name="cash-outline" size={18} color="#64748B" />
-                            <Text style={styles.detailValue}>{vacante.salary}</Text>
-                        </View>
-                        <View style={styles.detailRow}>
-                            <Ionicons name="briefcase-outline" size={18} color="#64748B" />
-                            <Text style={styles.detailValue}>{vacante.type}</Text>
-                        </View>
-                        <View style={styles.detailRow}>
-                            <Ionicons name="time-outline" size={18} color="#64748B" />
-                            <Text style={styles.detailValue}>Publicado {vacante.time}</Text>
-                        </View>
-                        <View style={styles.detailRow}>
-                            <Ionicons name="people-outline" size={18} color="#64748B" />
-                            <Text style={styles.detailValue}>{vacante.applicants} postulantes</Text>
-                        </View>
-                    </View>
-                </View>
-
-
-                <View style={styles.card}>
-                    <Text style={styles.sectionTitle}>Requisitos</Text>
-                    {[
-                        'Título universitario en Ingeniería, Administración o afines',
-                        'Mínimo 10 años de experiencia en la industria automotriz',
-                        'Experiencia comprobada en puestos de dirección',
-                        'Dominio del inglés (oral y escrito)',
-                        'Habilidades excepcionales de liderazgo',
-                        'Disponibilidad para viajar 30%'
-                    ].map((item, index) => (
-                        <View key={index} style={styles.requirementItem}>
-                            <Ionicons name="checkmark-circle-outline" size={20} color="#22C55E" />
-                            <Text style={styles.itemText}>{item}</Text>
-                        </View>
-                    ))}
-                </View>
-
-
-                <View style={styles.card}>
-                    <Text style={styles.sectionTitle}>Beneficios</Text>
-                    <View style={styles.benefitsGrid}>
-                        <View style={styles.benefitColumn}>
-                            <Text style={styles.benefitText}>• Seguro médico mayor</Text>
-                            <Text style={styles.benefitText}>• Bonos por desempeño</Text>
-                            <Text style={styles.benefitText}>• Capacitación continua</Text>
-                        </View>
-                        <View style={styles.benefitColumn}>
-                            <Text style={styles.benefitText}>• Fondo de ahorro</Text>
-                            <Text style={styles.benefitText}>• Automóvil ejecutivo</Text>
-                            <Text style={styles.benefitText}>• Plan de pensiones</Text>
-                        </View>
-                    </View>
-                </View>
-
-
-                <View style={styles.card}>
-                    <Text style={styles.sectionTitle}>Proceso de Selección</Text>
-                    {[
-                        { step: '1', label: 'Postulación', time: '1 día' },
-                        { step: '2', label: 'Revisión de perfil', time: '3-5 días' },
-                        { step: '3', label: 'Evaluación técnica', time: '1 semana' },
-                        { step: '4', label: 'Entrevistas', time: '2 semanas' },
-                        { step: '5', label: 'Oferta', time: '3-5 días' },
-                    ].map((item, index) => (
-                        <View key={index} style={styles.processRow}>
-                            <View style={styles.stepCircle}><Text style={styles.stepNumber}>{item.step}</Text></View>
-                            <View>
-                                <Text style={styles.stepLabel}>{item.label}</Text>
-                                <Text style={styles.stepTime}>{item.time}</Text>
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+                    <View style={styles.mainCard}>
+                        {/* Estado y Fecha */}
+                        <View style={styles.badgeRow}>
+                            <View style={styles.statusBadge}>
+                                <Text style={styles.statusText}>{String(vacante.estado || 'Activa')}</Text>
                             </View>
+                            <Text style={styles.dateText}>Publicada recientemente</Text>
                         </View>
-                    ))}
-                </View>
 
-            </ScrollView>
+                        {/* Título y Salario */}
+                        <Text style={styles.jobTitle}>{String(vacante.titulo)}</Text>
+                        <View style={styles.salaryRow}>
+                            <Ionicons name="cash-outline" size={24} color="#3B82F6" />
+                            <Text style={styles.salaryText}>
+                                ${vacante.salario_ofrecido ? vacante.salario_ofrecido.toLocaleString() : '0'} MXN
+                            </Text>
+                        </View>
 
-            <TouchableOpacity
-                style={styles.applyButton}
-                activeOpacity={0.8}
-                onPress={handlePostulacion}
-            >
-                <Text style={styles.applyButtonText}>Postularme a esta vacante</Text>
-            </TouchableOpacity>
+                        <View style={styles.divider} />
+
+                        {/* ✅ GRID DE DETALLES ORDENADOS (Llamando directo a la BDD) */}
+                        <View style={styles.detailsGrid}>
+
+                            {/* Ubicación */}
+                            <View style={styles.detailsItem}>
+                                <Ionicons name="location-outline" size={20} color="#64748B" />
+                                <View style={styles.detailsTextContainer}>
+                                    <Text style={styles.detailsLabel}>Ubicación</Text>
+                                    <Text style={styles.detailsValue}>{vacante.ubicacion || 'No especificada'}</Text>
+                                </View>
+                            </View>
+
+                            {/* Modalidad */}
+                            <View style={styles.detailsItem}>
+                                <Ionicons name="briefcase-outline" size={20} color="#64748B" />
+                                <View style={styles.detailsTextContainer}>
+                                    <Text style={styles.detailsLabel}>Modalidad</Text>
+                                    <Text style={styles.detailsValue}>{vacante.modalidad || 'No especificada'}</Text>
+                                </View>
+                            </View>
+
+                            {/* Nivel de Inglés */}
+                            <View style={styles.detailsItem}>
+                                <Ionicons name="language-outline" size={20} color="#64748B" />
+                                <View style={styles.detailsTextContainer}>
+                                    <Text style={styles.detailsLabel}>Inglés</Text>
+                                    <Text style={styles.detailsValue}>{vacante.nivel_ingles || 'No especificado'}</Text>
+                                </View>
+                            </View>
+
+                        </View>
+
+                        <View style={styles.divider} />
+
+                        {/* ✅ Descripción (Ahora contiene solo las responsabilidades) */}
+                        <Text style={styles.sectionTitle}>Responsabilidades del puesto</Text>
+                        <Text style={styles.descriptionText}>
+                            {String(vacante.descripcion || 'Sin descripción disponible.')}
+                        </Text>
+                    </View>
+
+                    {/* Botón de Acción */}
+                    <TouchableOpacity style={styles.applyButton} activeOpacity={0.8} onPress={handleApply}>
+                        <Text style={styles.applyButtonText}>Postularme ahora</Text>
+                    </TouchableOpacity>
+                </ScrollView>
+            </LinearGradient>
         </SafeAreaView>
     );
 };
 
+// ESTILOS ACTUALIZADOS
 const styles = StyleSheet.create({
-    mainContainer: { flex: 1, backgroundColor: '#F1F5F9' },
-    scrollContent: { padding: 16, paddingBottom: 100 },
-    card: {
-        backgroundColor: '#FFF',
-        borderRadius: 16,
-        padding: 20,
-        marginBottom: 16,
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
+    safeArea: { flex: 1, backgroundColor: '#0F172A' },
+    container: { flex: 1 },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0F172A' },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 15 },
+    headerTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: 'bold' },
+    backButton: { padding: 8, borderRadius: 12, backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+    scrollContent: { padding: 20 },
+    mainCard: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 25, elevation: 10 },
+    badgeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+    statusBadge: { backgroundColor: '#D1FAE5', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
+    statusText: { color: '#059669', fontWeight: 'bold', fontSize: 12, textTransform: 'uppercase' },
+    dateText: { color: '#94A3B8', fontSize: 12 },
+    jobTitle: { fontSize: 26, fontWeight: 'bold', color: '#0F172A', marginBottom: 12 },
+    salaryRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+    salaryText: { fontSize: 22, fontWeight: 'bold', color: '#3B82F6', marginLeft: 10 },
+    divider: { height: 1, backgroundColor: '#F1F5F9', width: '100%', marginBottom: 20 },
+
+    // ✅ GRID ACTUALIZADO PARA SOPORTAR VARIAS FILAS (flexWrap)
+    detailsGrid: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap', // Permite que los elementos pasen a la siguiente línea
+        marginBottom: 5
     },
-    headerRow: { flexDirection: 'row', marginBottom: 20 },
-    iconBox: { backgroundColor: '#F1F5F9', padding: 12, borderRadius: 12, justifyContent: 'center' },
-    headerText: { marginLeft: 15, flex: 1 },
-    jobTitle: { fontSize: 20, fontWeight: 'bold', color: '#0F172A' },
-    companyName: { fontSize: 16, color: '#64748B', marginVertical: 4 },
-    urgentBadge: { backgroundColor: '#EF4444', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, alignSelf: 'flex-start' },
-    urgentText: { color: 'white', fontSize: 12, fontWeight: 'bold' },
-
-    infoList: { borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 15 },
-    detailRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-    detailValue: { marginLeft: 10, color: '#475569', fontSize: 15 },
-
-    sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#0F172A', marginBottom: 15 },
-    requirementItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
-    itemText: { marginLeft: 10, color: '#475569', fontSize: 14, flex: 1, lineHeight: 20 },
-
-    benefitsGrid: { flexDirection: 'row', justifyContent: 'space-between' },
-    benefitColumn: { flex: 1 },
-    benefitText: { color: '#475569', fontSize: 14, marginBottom: 8 },
-
-    processRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
-    stepCircle: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#F1F5F9', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-    stepNumber: { fontWeight: 'bold', color: '#475569' },
-    stepLabel: { fontSize: 15, fontWeight: '600', color: '#0F172A' },
-    stepTime: { fontSize: 12, color: '#94A3B8' },
-
-    applyButton: {
-        position: 'absolute', bottom: 0, left: 0, right: 0,
-        backgroundColor: '#0F172A', padding: 20, alignItems: 'center'
+    detailsItem: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        width: '48%',
+        marginBottom: 15 // Espacio hacia abajo para la segunda fila (Inglés)
     },
-    applyButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold' }
+    detailsTextContainer: { marginLeft: 10, flex: 1 },
+    detailsLabel: { fontSize: 12, color: '#94A3B8', marginBottom: 2 },
+    detailsValue: { fontSize: 14, fontWeight: '600', color: '#1E293B' },
+
+    sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#1E293B', marginBottom: 10 },
+    descriptionText: { fontSize: 15, color: '#475569', lineHeight: 24, marginBottom: 10 },
+    applyButton: { backgroundColor: '#3B82F6', borderRadius: 16, paddingVertical: 18, alignItems: 'center', marginTop: 30 },
+    applyButtonText: { color: '#FFFFFF', fontSize: 18, fontWeight: 'bold' },
 });
 
 export default DVacante;

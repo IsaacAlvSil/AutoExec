@@ -35,9 +35,9 @@ function MainTabs({ onLogout }) {
                 },
             })}
         >
-            <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Dashboard' }} />
-            <Tab.Screen name="Solicitudes" component={VacantesScreen} options={{ title: 'Vacantes' }} />
-            <Tab.Screen name="Notificaciones" component={NotificationsScreen} />
+            <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Inicio' }} />
+            <Tab.Screen name="Solicitudes" component={VacantesScreen} options={{ title: 'Vacantes Disponibles' }} />
+            <Tab.Screen name="Notificaciones" component={NotificationsScreen} options={{ title: 'Notificaciones' }} />
 
             <Tab.Screen name="Perfil">
                 {(props) => <ProfileScreen {...props} onLogout={onLogout} />}
@@ -59,7 +59,7 @@ export default function AppNavigation({ isLoggedIn, onLogin, onLogout }) {
                 </>
             ) : (
                 <>
-                    <Stack.Screen name="Main">
+                    <Stack.Screen name="Volver">
                         {(props) => <MainTabs {...props} onLogout={onLogout} />}
                     </Stack.Screen>
 

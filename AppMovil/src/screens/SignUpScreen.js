@@ -7,17 +7,82 @@ import {
     TextInput,
     KeyboardAvoidingView,
     Platform,
-    ScrollView
+    ScrollView,
+    Alert,
+    ActivityIndicator
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
+const API_URL = 'http://192.168.1.72:5000';
+
 const SignUpScreen = ({ navigation }) => {
-    // Estados para guardar lo que el usuario escribe
     const [nombre, setNombre] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleRegister = async () => {
+        // 1. Validaciones básicas locales
+        if (!nombre || !email || !password || !confirmPassword) {
+            Alert.alert('Error', 'Por favor llena todos los campos.');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            Alert.alert('Error', 'Las contraseñas no coinciden.');
+            return;
+        }
+
+        if (password.length < 6) {
+            Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres.');
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            // 2. Petición al backend
+            // Usando la ruta que vimos en Swagger: /api/registro
+            const response = await fetch(`${API_URL}/api/registro`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password,
+                    // Si tu backend requiere el nombre, añádelo aquí. 
+                    // Según tu Swagger, pedía 'id_rol', le pondremos 1 por defecto (Candidato)
+                    id_rol: 2
+                })
+            });
+
+            const data = await response.json();
+
+            // 3. Manejo de la respuesta
+            if (response.ok) {
+                Alert.alert(
+                    '¡Registro Exitoso!',
+                    'Tu cuenta ha sido creada. Ahora puedes iniciar sesión.',
+                    [{ text: 'OK', onPress: () => navigation.navigate('Login') }] // Asumiendo que tu ruta se llama 'Login'
+                );
+            } else {
+                // Si el backend detecta que el correo ya existe, debería mandar el error aquí
+                Alert.alert('Error en el registro', data.detail || 'No se pudo crear la cuenta.');
+            }
+        } catch (error) {
+            Alert.alert(
+                'Error de conexión',
+                'No se pudo conectar con el servidor. Verifica tu red.'
+            );
+            console.error('Error en registro:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <KeyboardAvoidingView
@@ -95,9 +160,14 @@ const SignUpScreen = ({ navigation }) => {
                         {/* Botón Principal: Crear Cuenta */}
                         <TouchableOpacity
                             style={styles.primaryButton}
-                            onPress={() => console.log('Crear cuenta presionado')}
+                            onPress={handleRegister}
+                            disabled={loading}
                         >
-                            <Text style={styles.primaryButtonText}>Crear Cuenta</Text>
+                            {loading ? (
+                                <ActivityIndicator color="#FFFFFF" />
+                            ) : (
+                                <Text style={styles.primaryButtonText}>Crear Cuenta</Text>
+                            )}
                         </TouchableOpacity>
 
                         {/* Botón Secundario: Volver al Login */}
@@ -115,103 +185,20 @@ const SignUpScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    scrollContainer: {
-        flexGrow: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 20,
-    },
-    card: {
-        backgroundColor: '#FFFFFF',
-        padding: 30,
-        borderRadius: 16,
-        alignItems: 'center',
-        width: '100%',
-        maxWidth: 400,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 5,
-    },
-    iconHeader: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: '#F1F5F9',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 15,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#0F172A',
-        marginBottom: 8,
-        textAlign: 'center'
-    },
-    subtitle: {
-        fontSize: 14,
-        color: '#64748B',
-        marginBottom: 30,
-        textAlign: 'center',
-        paddingHorizontal: 10,
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#F8FAFC',
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
-        borderRadius: 10,
-        paddingHorizontal: 15,
-        marginBottom: 15,
-        width: '100%',
-        height: 50,
-    },
-    inputIcon: {
-        marginRight: 10,
-    },
-    input: {
-        flex: 1,
-        color: '#0F172A',
-        fontSize: 15,
-    },
-    primaryButton: {
-        backgroundColor: '#3B82F6', // Un azul vibrante para invitar a la acción
-        paddingVertical: 15,
-        borderRadius: 10,
-        width: '100%',
-        alignItems: 'center',
-        marginTop: 10,
-        shadowColor: '#3B82F6',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    primaryButtonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: 'bold'
-    },
-    footerRow: {
-        flexDirection: 'row',
-        marginTop: 25,
-        alignItems: 'center',
-    },
-    footerText: {
-        color: '#64748B',
-        fontSize: 14,
-    },
-    linkText: {
-        color: '#0F172A',
-        fontSize: 14,
-        fontWeight: 'bold',
-    }
+    container: { flex: 1 },
+    scrollContainer: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+    card: { backgroundColor: '#FFFFFF', padding: 30, borderRadius: 16, alignItems: 'center', width: '100%', maxWidth: 400, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 5 },
+    iconHeader: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#F1F5F9', justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
+    title: { fontSize: 24, fontWeight: 'bold', color: '#0F172A', marginBottom: 8, textAlign: 'center' },
+    subtitle: { fontSize: 14, color: '#64748B', marginBottom: 30, textAlign: 'center', paddingHorizontal: 10 },
+    inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, paddingHorizontal: 15, marginBottom: 15, width: '100%', height: 50 },
+    inputIcon: { marginRight: 10 },
+    input: { flex: 1, color: '#0F172A', fontSize: 15 },
+    primaryButton: { backgroundColor: '#3B82F6', paddingVertical: 15, borderRadius: 10, width: '100%', alignItems: 'center', marginTop: 10, height: 50, justifyContent: 'center', shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+    primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+    footerRow: { flexDirection: 'row', marginTop: 25, alignItems: 'center' },
+    footerText: { color: '#64748B', fontSize: 14 },
+    linkText: { color: '#0F172A', fontSize: 14, fontWeight: 'bold' }
 });
 
 export default SignUpScreen;

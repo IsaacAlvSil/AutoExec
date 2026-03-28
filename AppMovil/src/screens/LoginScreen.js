@@ -1,10 +1,67 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// 🚨 PON TU IP AQUÍ (Ejemplo: 'http://192.168.1.75:5000')
+const API_URL = 'http://10.16.35.92:5000';
 
 const LoginScreen = ({ navigation, onLogin }) => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
+
+    const handleLogin = async () => {
+        // 1. Validar que no envíen campos vacíos
+        if (!email || !password) {
+            Alert.alert('Error', 'Por favor ingresa tu correo y contraseña');
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            // 2. Hacer la petición a FastAPI
+            // NOTA: Ajusta '/login' a la ruta exacta de tu backend (ej. '/api/login' o '/token')
+            const response = await fetch(`${API_URL}/api/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // Si tu backend de FastAPI usa "OAuth2PasswordRequestForm" estricto, 
+                    // avísame, porque se tiene que mandar como 'application/x-www-form-urlencoded'
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password
+                })
+            });
+
+            const data = await response.json();
+
+            // 3. Evaluar la respuesta
+            if (response.ok) {
+                // Login exitoso 🎉
+                await AsyncStorage.setItem('user_email', email);
+                Alert.alert('¡Éxito!', 'Sesión iniciada correctamente');
+                // Llamamos a la función onLogin para cambiar de pantalla en la app
+                if (onLogin) onLogin(data);
+            } else {
+                // Error del servidor (Credenciales incorrectas, etc)
+                // FastAPI suele mandar los errores en un campo llamado "detail"
+                Alert.alert('Error', data.detail || 'Credenciales incorrectas');
+            }
+        } catch (error) {
+            Alert.alert(
+                'Error de conexión',
+                'No se pudo conectar con el servidor. Verifica que tu celular y compu estén en la misma red Wi-Fi y que la IP sea correcta.'
+            );
+            console.error('Error en login:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <LinearGradient
@@ -32,6 +89,8 @@ const LoginScreen = ({ navigation, onLogin }) => {
                                 placeholderTextColor="#94A3B8"
                                 autoCapitalize="none"
                                 keyboardType="email-address"
+                                value={email} // <-- Vinculado al estado
+                                onChangeText={setEmail} // <-- Actualiza el estado
                             />
                         </View>
                     </View>
@@ -45,6 +104,8 @@ const LoginScreen = ({ navigation, onLogin }) => {
                                 placeholder="••••••••"
                                 placeholderTextColor="#94A3B8"
                                 secureTextEntry={!showPassword}
+                                value={password} // <-- Vinculado al estado
+                                onChangeText={setPassword} // <-- Actualiza el estado
                             />
                             <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                                 <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#94A3B8" />
@@ -53,14 +114,22 @@ const LoginScreen = ({ navigation, onLogin }) => {
                     </View>
 
                     <View style={styles.optionsRow}>
-
                         <TouchableOpacity onPress={() => navigation.navigate('RecoverPassword')}>
-                            <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
+                            <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
                         </TouchableOpacity>
                     </View>
 
-                    <TouchableOpacity style={styles.loginBtn} onPress={onLogin}>
-                        <Text style={styles.loginBtnText}>Iniciar Sesión</Text>
+                    {/* Botón de Login modificado para mostrar carga */}
+                    <TouchableOpacity
+                        style={styles.loginBtn}
+                        onPress={handleLogin}
+                        disabled={loading} // Deshabilita el botón si está cargando
+                    >
+                        {loading ? (
+                            <ActivityIndicator color="#FFFFFF" />
+                        ) : (
+                            <Text style={styles.loginBtnText}>Iniciar Sesión</Text>
+                        )}
                     </TouchableOpacity>
 
                     <View style={styles.registerRow}>
@@ -79,129 +148,27 @@ const LoginScreen = ({ navigation, onLogin }) => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    innerContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 20,
-    },
-    headerContainer: {
-        alignItems: 'center',
-        marginBottom: 30,
-    },
-    brandTitle: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#FFFFFF',
-        marginBottom: 5,
-    },
-    brandSubtitle: {
-        fontSize: 12,
-        color: '#CBD5E1',
-    },
-    card: {
-        backgroundColor: '#FFFFFF',
-        width: '100%',
-        maxWidth: 400,
-        borderRadius: 16,
-        padding: 30,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 5,
-    },
-    cardTitle: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: '#0F172A',
-        marginBottom: 8,
-    },
-    cardSubtitle: {
-        fontSize: 14,
-        color: '#64748B',
-        marginBottom: 25,
-    },
-    inputWrapper: {
-        marginBottom: 20,
-    },
-    inputLabel: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: '#334155',
-        marginBottom: 8,
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        height: 50,
-        backgroundColor: '#FAFAFA',
-    },
-    icon: {
-        marginRight: 10,
-    },
-    input: {
-        flex: 1,
-        color: '#0F172A',
-        fontSize: 15,
-    },
-    optionsRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 25,
-    },
-    checkboxContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    checkboxText: {
-        fontSize: 13,
-        color: '#64748B',
-        marginLeft: 6,
-    },
-    forgotText: {
-        fontSize: 13,
-        fontWeight: 'bold',
-        color: '#0F172A',
-    },
-    loginBtn: {
-        backgroundColor: '#0F172A',
-        paddingVertical: 15,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    loginBtnText: {
-        color: '#FFFFFF',
-        fontSize: 15,
-        fontWeight: 'bold',
-    },
-    registerRow: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-    },
-    registerText: {
-        fontSize: 13,
-        color: '#64748B',
-    },
-    registerLink: {
-        fontSize: 13,
-        fontWeight: 'bold',
-        color: '#0F172A',
-    },
-    footerText: {
-        color: '#94A3B8',
-        fontSize: 11,
-        marginTop: 40,
-    }
+    container: { flex: 1 },
+    innerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+    headerContainer: { alignItems: 'center', marginBottom: 30 },
+    brandTitle: { fontSize: 28, fontWeight: 'bold', color: '#FFFFFF', marginBottom: 5 },
+    brandSubtitle: { fontSize: 12, color: '#CBD5E1' },
+    card: { backgroundColor: '#FFFFFF', width: '100%', maxWidth: 400, borderRadius: 16, padding: 30, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 5 },
+    cardTitle: { fontSize: 22, fontWeight: 'bold', color: '#0F172A', marginBottom: 8 },
+    cardSubtitle: { fontSize: 14, color: '#64748B', marginBottom: 25 },
+    inputWrapper: { marginBottom: 20 },
+    inputLabel: { fontSize: 13, fontWeight: '600', color: '#334155', marginBottom: 8 },
+    inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 8, paddingHorizontal: 12, height: 50, backgroundColor: '#FAFAFA' },
+    icon: { marginRight: 10 },
+    input: { flex: 1, color: '#0F172A', fontSize: 15 },
+    optionsRow: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 25 },
+    forgotText: { fontSize: 13, fontWeight: 'bold', color: '#0F172A' },
+    loginBtn: { backgroundColor: '#0F172A', paddingVertical: 15, borderRadius: 8, alignItems: 'center', marginBottom: 20, height: 50, justifyContent: 'center' },
+    loginBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: 'bold' },
+    registerRow: { flexDirection: 'row', justifyContent: 'center' },
+    registerText: { fontSize: 13, color: '#64748B' },
+    registerLink: { fontSize: 13, fontWeight: 'bold', color: '#0F172A' },
+    footerText: { color: '#94A3B8', fontSize: 11, marginTop: 40 }
 });
 
 export default LoginScreen;

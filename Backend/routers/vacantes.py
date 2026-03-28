@@ -4,18 +4,19 @@ from data.db import get_db
 from models import models
 
 
+
 # Creamos el router (un mini-main.py exclusivo para vacantes)
 router = APIRouter(
     prefix="/api/vacantes",
     tags=["Vacantes"]
 )
 
-# 🟢 LEER VACANTES
+#LEER VACANTES
 @router.get("/")
 def get_vacantes(db: Session = Depends(get_db)):
     return db.query(models.Vacante).all()
 
-# 🔵 CREAR VACANTE
+#CREAR VACANTE
 @router.post("/")
 def crear_vacante(title: str, company: str, urgent: bool = False, db: Session = Depends(get_db)):
     nueva_vacante = models.Vacante(title=title, company=company, urgent=urgent)

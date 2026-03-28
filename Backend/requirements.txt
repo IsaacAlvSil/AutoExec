@@ -1,3 +1,5 @@
 fastapi[all]
 psycopg2-binary
 sqlalchemy
+passlib[bcrypt]
+bcrypt==3.2.2

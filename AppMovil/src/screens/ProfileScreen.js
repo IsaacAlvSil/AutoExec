@@ -1,25 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, Modal, TextInput, Alert } from 'react-native';
+import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, Modal, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-//IP conectada a Docker
-const API_URL = 'http://10.16.35.180:5000/api/certificaciones';
+// IP conectada a Docker
+const BASE_URL = 'http://10.16.35.92:5000';
+const API_URL_CERT = `${BASE_URL}/api/certificaciones`;
 
 const ProfileScreen = ({ navigation, onLogout }) => {
-  const [usuario] = useState({
-    nombre: 'Isaac',
-    titulo: 'Director de Operaciones',
-    area: 'Operaciones y Manufactura',
-    nivel: 'Ejecutivo Senior',
-    email: 'Usuario.16@gmail.com',
-    telefono: '+52 555 123 4567',
-    ubicacion: 'Querétaro, México',
-    verificado: true,
+  // 1. ESTADOS DEL PERFIL
+  const [perfil, setPerfil] = useState({
+    id_perfil: null, // Agregado para tenerlo siempre a la mano
+    nombre: 'Cargando...',
+    titulo: '...',
+    area: 'Área Profesional',
+    nivel: '...',
+    email: '...',
+    telefono: '...',
+    ubicacion: 'México',
+    verificado: false,
     foto: null
   });
+  const [loadingPerfil, setLoadingPerfil] = useState(true);
+  const [idPerfilActual, setIdPerfilActual] = useState(null);
 
-  //2. ESTADOS DEL CRUD DE CERTIFICACIONES
+  // 2. ESTADOS DEL CRUD DE CERTIFICACIONES
   const [certificaciones, setCertificaciones] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [certEditandoId, setCertEditandoId] = useState(null);
@@ -28,37 +34,153 @@ const ProfileScreen = ({ navigation, onLogout }) => {
   const [formEntidad, setFormEntidad] = useState('');
   const [formAño, setFormAño] = useState('');
 
-  //READ Cargar certificaciones al inicio
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [formPerfil, setFormPerfil] = useState({
+    titulo: '',
+    telefono: '',
+    area: '',
+    nivel: ''
+  });
+
+  // 3. CARGAR DATOS AL INICIO
   useEffect(() => {
-    obtenerCertificaciones();
+    cargarDatosPerfil();
   }, []);
 
-  const obtenerCertificaciones = async () => {
+  const cargarDatosPerfil = async () => {
     try {
-      const respuesta = await fetch(API_URL);
-      const datos = await respuesta.json();
-      setCertificaciones(datos);
+      const storedEmail = await AsyncStorage.getItem('user_email');
+      console.log("👀 1. Correo en sesión:", storedEmail);
+
+      if (storedEmail) {
+        const urlBusqueda = `${BASE_URL}/api/perfiles/email/${storedEmail}`;
+        console.log("👀 2. Buscando perfil en:", urlBusqueda);
+
+        const respuesta = await fetch(urlBusqueda);
+        console.log("👀 3. Código de respuesta del servidor:", respuesta.status);
+
+        if (respuesta.ok) {
+          const datosDeLaBase = await respuesta.json();
+          console.log("👀 4. ¡Perfil encontrado!", datosDeLaBase);
+
+          setIdPerfilActual(datosDeLaBase.id_perfil);
+
+          setPerfil({
+            id_perfil: datosDeLaBase.id_perfil,
+            nombre: `${datosDeLaBase.nombre} ${datosDeLaBase.apellido}`,
+            titulo: datosDeLaBase.puesto_actual || 'Puesto no especificado',
+            area: 'Área Ejecutiva',
+            nivel: datosDeLaBase.experiencia_anios ? `${datosDeLaBase.experiencia_anios} años de exp.` : 'Sin experiencia',
+            email: storedEmail,
+            telefono: datosDeLaBase.telefono || 'Sin teléfono',
+            ubicacion: 'México',
+            verificado: true,
+            foto: null
+          });
+
+          obtenerCertificaciones(datosDeLaBase.id_perfil);
+        } else {
+          // Si falla, vamos a ver qué nos está diciendo FastAPI
+          const errorBackend = await respuesta.text();
+          console.log("👀 5. El servidor rechazó la búsqueda. Razón:", errorBackend);
+
+          const emailName = storedEmail.split('@')[0];
+          setPerfil(prev => ({ ...prev, nombre: emailName, email: storedEmail, titulo: 'Completa tu perfil' }));
+        }
+      } else {
+        console.log("👀 ERROR: No hay ningún correo guardado en AsyncStorage");
+      }
     } catch (error) {
-      console.error("Error GET:", error);
+      console.error("👀 Error catastrofico al cargar:", error);
+    } finally {
+      setLoadingPerfil(false);
     }
   };
 
-  //CREATE y UPDATE
+  const habilitarEdicion = () => {
+    setFormPerfil({
+      titulo: perfil.titulo,
+      telefono: perfil.telefono,
+      area: perfil.area,
+      nivel: perfil.nivel
+    });
+    setIsEditingProfile(true);
+  };
+
+  const guardarCambiosPerfil = async () => {
+    const idAEditar = idPerfilActual || perfil.id_perfil;
+
+    if (!idAEditar) {
+      Alert.alert("Error", "No se encontró el ID del perfil. Por favor, recarga la aplicación.");
+      return;
+    }
+
+    try {
+      const urlDestino = `${BASE_URL}/api/perfiles/${idAEditar}`;
+      console.log("Intentando actualizar en:", urlDestino);
+
+      const respuesta = await fetch(urlDestino, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          puesto_actual: formPerfil.titulo,
+          telefono: formPerfil.telefono
+        })
+      });
+
+      if (respuesta.ok) {
+        setPerfil(prev => ({
+          ...prev,
+          titulo: formPerfil.titulo,
+          telefono: formPerfil.telefono
+        }));
+        setIsEditingProfile(false);
+        Alert.alert("Éxito", "Perfil actualizado correctamente");
+      } else {
+        const errorDelBackend = await respuesta.json();
+        console.log("Error de FastAPI:", errorDelBackend);
+        Alert.alert("Error del servidor", JSON.stringify(errorDelBackend));
+      }
+    } catch (error) {
+      console.error("Error al actualizar perfil:", error);
+      Alert.alert("Error", "No se pudo conectar con el servidor");
+    }
+  };
+
+  // READ Certificaciones
+  const obtenerCertificaciones = async (id_perfil) => {
+    if (!id_perfil) return;
+    try {
+      const respuesta = await fetch(`${API_URL_CERT}/perfil/${id_perfil}`);
+      const datos = await respuesta.json();
+      setCertificaciones(datos);
+    } catch (error) {
+      console.error("Error GET certificaciones:", error);
+    }
+  };
+
+  // CREATE y UPDATE Certificaciones
   const guardarCertificacion = async () => {
     if (!formNombre || !formEntidad || !formAño) {
       Alert.alert("Error", "Por favor llena todos los campos");
       return;
     }
 
+    const idUsar = idPerfilActual || perfil.id_perfil;
+    if (!idUsar) {
+      Alert.alert("Error", "No se encontró el perfil del usuario.");
+      return;
+    }
+
     const datosEnviar = {
-      id: certEditandoId !== null ? certEditandoId : Math.floor(Math.random() * 10000),
+      id_perfil: idUsar,
       nombre: formNombre,
       institucion: formEntidad,
       anio: parseInt(formAño)
     };
 
     try {
-      const urlFetch = certEditandoId !== null ? `${API_URL}/${certEditandoId}` : API_URL;
+      const urlFetch = certEditandoId !== null ? `${API_URL_CERT}/${certEditandoId}` : API_URL_CERT;
       const metodoFetch = certEditandoId !== null ? 'PUT' : 'POST';
 
       const respuesta = await fetch(urlFetch, {
@@ -69,8 +191,10 @@ const ProfileScreen = ({ navigation, onLogout }) => {
 
       if (respuesta.ok) {
         cerrarModal();
-        obtenerCertificaciones();
+        obtenerCertificaciones(idUsar);
         Alert.alert("Éxito", certEditandoId !== null ? "Certificación actualizada" : "Certificación guardada");
+      } else {
+        Alert.alert("Error", "No se pudo guardar en la base de datos");
       }
     } catch (error) {
       console.error(`Error ${certEditandoId !== null ? 'PUT' : 'POST'}:`, error);
@@ -78,15 +202,15 @@ const ProfileScreen = ({ navigation, onLogout }) => {
     }
   };
 
-  //DELETE
-  const eliminarCertificacion = (id) => {
+  // DELETE Certificaciones
+  const eliminarCertificacion = (id_certificacion) => {
     Alert.alert("Eliminar", "¿Estás seguro de que deseas borrarla?", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Sí, borrar", style: "destructive", onPress: async () => {
           try {
-            const respuesta = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-            if (respuesta.ok) obtenerCertificaciones();
+            const respuesta = await fetch(`${API_URL_CERT}/${id_certificacion}`, { method: 'DELETE' });
+            if (respuesta.ok) obtenerCertificaciones(idPerfilActual);
           } catch (error) {
             console.error("Error DELETE:", error);
           }
@@ -95,7 +219,7 @@ const ProfileScreen = ({ navigation, onLogout }) => {
     ]);
   };
 
-  //FUNCIONES DEL MODAL
+  // FUNCIONES DEL MODAL
   const abrirModalCrear = () => {
     setCertEditandoId(null);
     setFormNombre(''); setFormEntidad(''); setFormAño('');
@@ -103,7 +227,7 @@ const ProfileScreen = ({ navigation, onLogout }) => {
   };
 
   const abrirModalEditar = (cert) => {
-    setCertEditandoId(cert.id);
+    setCertEditandoId(cert.id_certificacion);
     setFormNombre(cert.nombre); setFormEntidad(cert.institucion); setFormAño(cert.anio.toString());
     setModalVisible(true);
   };
@@ -113,25 +237,17 @@ const ProfileScreen = ({ navigation, onLogout }) => {
     setCertEditandoId(null);
   };
 
-  //AQUÍ DEBE IR LA NUEVA FUNCIÓN
   const handleLogout = () => {
     Alert.alert(
       "Cerrar Sesión",
       "¿Estás seguro de que deseas salir de tu cuenta?",
       [
         { text: "Cancelar", style: "cancel" },
-        {
-          text: "Sí, salir",
-          style: "destructive",
-          onPress: () => {
-            onLogout();
-          }
-        }
+        { text: "Sí, salir", style: "destructive", onPress: () => { onLogout(); } }
       ]
     );
   };
 
-  // Nuestro Componente Reutilizable
   const Seccion = ({ titulo, icon, children, onAgregar }) => (
     <View style={styles.card}>
       <View style={styles.sectionHeaderRow}>
@@ -153,54 +269,94 @@ const ProfileScreen = ({ navigation, onLogout }) => {
     <LinearGradient colors={['#0F172A', '#1E293B', '#334155']} style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
-        {/* --- TARJETA PRINCIPAL DEL PERFIL (FOTO, DATOS, CONTACTO) --- */}
+        {/* --- TARJETA PRINCIPAL DEL PERFIL --- */}
         <View style={styles.card}>
-          <View style={styles.fotoContainer}>
-            {usuario.foto ? (
-              <Image source={{ uri: usuario.foto }} style={styles.fotoPerfil} />
-            ) : (
-              <View style={styles.fotoPlaceholder}>
-                <Text style={styles.fotoPlaceholderText}>{usuario.nombre.charAt(0)}</Text>
+          {loadingPerfil ? (
+            <ActivityIndicator size="large" color="#3B82F6" style={{ marginVertical: 30 }} />
+          ) : (
+            <>
+              <View style={styles.fotoContainer}>
+                {perfil.foto ? (
+                  <Image source={{ uri: perfil.foto }} style={styles.fotoPerfil} />
+                ) : (
+                  <View style={styles.fotoPlaceholder}>
+                    <Text style={styles.fotoPlaceholderText}>{perfil.nombre.charAt(0)}</Text>
+                  </View>
+                )}
+                <TouchableOpacity style={styles.editPhotoBtn}>
+                  <Ionicons name="camera" size={16} color="#FFF" />
+                </TouchableOpacity>
               </View>
-            )}
-            <TouchableOpacity style={styles.editPhotoBtn}>
-              <Ionicons name="camera" size={16} color="#FFF" />
-            </TouchableOpacity>
-          </View>
 
-          <View style={styles.infoHeader}>
-            <Text style={styles.nombre}>{usuario.nombre}</Text>
+              <View style={styles.infoHeader}>
+                <Text style={styles.nombre}>{perfil.nombre}</Text>
 
-            <View style={styles.tituloRow}>
-              <Text style={styles.titulo}>{usuario.titulo}</Text>
-              {usuario.verificado && (
-                <View style={styles.badgeVerificado}>
-                  <Ionicons name="checkmark-circle" size={14} color="#10B981" style={{ marginRight: 4 }} />
-                  <Text style={styles.badgeTextoVerificado}>Verificado</Text>
-                </View>
-              )}
-            </View>
+                {/* CONDICIONAL: Modo Edición vs Modo Vista */}
+                {isEditingProfile ? (
+                  <View style={{ width: '100%', paddingHorizontal: 20 }}>
+                    <Text style={styles.labelInput}>Puesto / Título</Text>
+                    <TextInput style={styles.input} value={formPerfil.titulo} onChangeText={(txt) => setFormPerfil({ ...formPerfil, titulo: txt })} />
 
-            <View style={styles.badgesContainer}>
-              <View style={styles.badgeIndustria}><Text style={styles.badgeIndustriaTexto}>{usuario.area}</Text></View>
-              <View style={styles.badgeIndustria}><Text style={styles.badgeIndustriaTexto}>{usuario.nivel}</Text></View>
-            </View>
+                    <Text style={styles.labelInput}>Área</Text>
+                    <TextInput style={styles.input} value={formPerfil.area} onChangeText={(txt) => setFormPerfil({ ...formPerfil, area: txt })} />
 
-            <View style={styles.contactoContainer}>
-              <View style={styles.contactoRow}><Ionicons name="mail-outline" size={16} color="#64748B" /><Text style={styles.contactoItem}>{usuario.email}</Text></View>
-              <View style={styles.contactoRow}><Ionicons name="call-outline" size={16} color="#64748B" /><Text style={styles.contactoItem}>{usuario.telefono}</Text></View>
-              <View style={styles.contactoRow}><Ionicons name="location-outline" size={16} color="#64748B" /><Text style={styles.contactoItem}>{usuario.ubicacion}</Text></View>
-            </View>
-          </View>
+                    <Text style={styles.labelInput}>Teléfono</Text>
+                    <TextInput style={styles.input} value={formPerfil.telefono} onChangeText={(txt) => setFormPerfil({ ...formPerfil, telefono: txt })} keyboardType="phone-pad" />
+
+                    <View style={styles.modalBotones}>
+                      <TouchableOpacity style={[styles.btnModal, styles.btnCancelar]} onPress={() => setIsEditingProfile(false)}>
+                        <Text style={styles.txtBtnCancelar}>Cancelar</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={[styles.btnModal, styles.btnGuardar]} onPress={guardarCambiosPerfil}>
+                        <Text style={styles.txtBtnGuardar}>Guardar</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ) : (
+                  <>
+                    <View style={styles.tituloRow}>
+                      <Text style={styles.titulo}>{perfil.titulo}</Text>
+                      {perfil.verificado && (
+                        <View style={styles.badgeVerificado}>
+                          <Ionicons name="checkmark-circle" size={14} color="#10B981" style={{ marginRight: 4 }} />
+                          <Text style={styles.badgeTextoVerificado}>Verificado</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    <View style={styles.badgesContainer}>
+                      <View style={styles.badgeIndustria}><Text style={styles.badgeIndustriaTexto}>{perfil.area}</Text></View>
+                      <View style={styles.badgeIndustria}><Text style={styles.badgeIndustriaTexto}>{perfil.nivel}</Text></View>
+                    </View>
+
+                    <View style={styles.contactoContainer}>
+                      <View style={styles.contactoRow}><Ionicons name="mail-outline" size={16} color="#64748B" /><Text style={styles.contactoItem}>{perfil.email}</Text></View>
+                      <View style={styles.contactoRow}><Ionicons name="call-outline" size={16} color="#64748B" /><Text style={styles.contactoItem}>{perfil.telefono}</Text></View>
+                      <View style={styles.contactoRow}><Ionicons name="location-outline" size={16} color="#64748B" /><Text style={styles.contactoItem}>{perfil.ubicacion}</Text></View>
+                    </View>
+
+                    {/* Botón para activar la edición */}
+                    <TouchableOpacity
+                      style={{ backgroundColor: '#F1F5F9', paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20, marginTop: 5, flexDirection: 'row', alignItems: 'center' }}
+                      onPress={habilitarEdicion}
+                    >
+                      <Ionicons name="pencil" size={14} color="#475569" style={{ marginRight: 5 }} />
+                      <Text style={{ color: '#475569', fontWeight: 'bold', fontSize: 13 }}>Editar Perfil</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
+            </>
+          )}
         </View>
 
-        {/* --- SECCIÓN DE CERTIFICACIONES (CONECTADA A DOCKER) --- */}
+        {/* --- SECCIÓN DE CERTIFICACIONES --- */}
         <Seccion titulo="Certificaciones" icon="ribbon-outline" onAgregar={abrirModalCrear}>
           {certificaciones.length === 0 ? (
             <Text style={{ color: '#94A3B8', textAlign: 'center', marginVertical: 10 }}>No hay certificaciones.</Text>
           ) : (
             certificaciones.map((item, index) => (
-              <View key={item.id} style={[styles.itemLista, index === certificaciones.length - 1 && styles.noBorder]}>
+              <View key={item.id_certificacion} style={[styles.itemLista, index === certificaciones.length - 1 && styles.noBorder]}>
 
                 <View style={styles.certContent}>
                   <Text style={styles.certNombre}>{item.nombre}</Text>
@@ -213,7 +369,7 @@ const ProfileScreen = ({ navigation, onLogout }) => {
                     <Ionicons name="pencil" size={18} color="#3B82F6" />
                   </TouchableOpacity>
 
-                  <TouchableOpacity onPress={() => eliminarCertificacion(item.id)} style={styles.btnAccion}>
+                  <TouchableOpacity onPress={() => eliminarCertificacion(item.id_certificacion)} style={styles.btnAccion}>
                     <Ionicons name="trash-outline" size={18} color="#EF4444" />
                   </TouchableOpacity>
                 </View>
@@ -230,6 +386,7 @@ const ProfileScreen = ({ navigation, onLogout }) => {
         <View style={{ height: 30 }} />
       </ScrollView>
 
+      {/* --- MODAL DE CERTIFICACIONES --- */}
       <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={cerrarModal}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -261,7 +418,7 @@ const ProfileScreen = ({ navigation, onLogout }) => {
         </View>
       </Modal>
 
-    </LinearGradient>
+    </LinearGradient >
   );
 };
 

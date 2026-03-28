@@ -3,7 +3,6 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from data.db import Base
 
-
 # ──────────────────────────────────────────────
 # Tabla: roles
 # ──────────────────────────────────────────────
@@ -92,6 +91,10 @@ class Vacante(Base):
     fecha_cierre       = Column(DateTime)
     id_departamento    = Column(Integer, ForeignKey("departamentos.id_departamento"))
     id_reclutador      = Column(Integer, ForeignKey("usuarios.id_usuario"))
+    ubicacion          = Column(String(255), nullable=True)
+    modalidad          = Column(String(100), nullable=True)
+    nivel_ingles       = Column(String(100), nullable=True)
+    
 
     departamento  = relationship("Departamento", back_populates="vacantes")
     reclutador    = relationship("Usuario", back_populates="vacantes_reclutadas")
@@ -264,3 +267,14 @@ class Auditoria(Base):
     fecha        = Column(DateTime, server_default=func.now())
 
     usuario = relationship("Usuario", back_populates="auditoria")
+
+
+class Certificacion(Base):
+    __tablename__ = "certificaciones"
+
+    id_certificacion = Column(Integer, primary_key=True, index=True)
+    id_perfil = Column(Integer, ForeignKey('perfiles.id_perfil', ondelete="CASCADE"), nullable=False)
+    
+    nombre = Column(String(150), nullable=False)
+    institucion = Column(String(150), nullable=False)
+    anio = Column(Integer)
