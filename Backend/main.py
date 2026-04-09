@@ -8,9 +8,9 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="API AutoExec")
 
-# Conectamos el router de vacantes a la app principal
 app.include_router(vacantes.router)
 app.include_router(auth.router)
+app.include_router(perfiles_router.router) 
 
 
 @app.get("/")

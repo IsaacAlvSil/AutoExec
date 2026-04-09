@@ -4,8 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// 🚨 PON TU IP AQUÍ (Ejemplo: 'http://192.168.1.75:5000')
-const API_URL = 'http://10.16.35.92:5000';
+const API_URL = 'http://192.168.1.79:5000';
 
 const LoginScreen = ({ navigation, onLogin }) => {
     const [email, setEmail] = useState('');
@@ -14,7 +13,6 @@ const LoginScreen = ({ navigation, onLogin }) => {
     const [loading, setLoading] = useState(false);
 
     const handleLogin = async () => {
-        // 1. Validar que no envíen campos vacíos
         if (!email || !password) {
             Alert.alert('Error', 'Por favor ingresa tu correo y contraseña');
             return;
@@ -23,14 +21,10 @@ const LoginScreen = ({ navigation, onLogin }) => {
         setLoading(true);
 
         try {
-            // 2. Hacer la petición a FastAPI
-            // NOTA: Ajusta '/login' a la ruta exacta de tu backend (ej. '/api/login' o '/token')
             const response = await fetch(`${API_URL}/api/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    // Si tu backend de FastAPI usa "OAuth2PasswordRequestForm" estricto, 
-                    // avísame, porque se tiene que mandar como 'application/x-www-form-urlencoded'
                 },
                 body: JSON.stringify({
                     email: email,
@@ -40,16 +34,11 @@ const LoginScreen = ({ navigation, onLogin }) => {
 
             const data = await response.json();
 
-            // 3. Evaluar la respuesta
             if (response.ok) {
-                // Login exitoso 🎉
                 await AsyncStorage.setItem('user_email', email);
                 Alert.alert('¡Éxito!', 'Sesión iniciada correctamente');
-                // Llamamos a la función onLogin para cambiar de pantalla en la app
                 if (onLogin) onLogin(data);
             } else {
-                // Error del servidor (Credenciales incorrectas, etc)
-                // FastAPI suele mandar los errores en un campo llamado "detail"
                 Alert.alert('Error', data.detail || 'Credenciales incorrectas');
             }
         } catch (error) {
@@ -89,8 +78,8 @@ const LoginScreen = ({ navigation, onLogin }) => {
                                 placeholderTextColor="#94A3B8"
                                 autoCapitalize="none"
                                 keyboardType="email-address"
-                                value={email} // <-- Vinculado al estado
-                                onChangeText={setEmail} // <-- Actualiza el estado
+                                value={email}
+                                onChangeText={setEmail}
                             />
                         </View>
                     </View>
@@ -104,8 +93,8 @@ const LoginScreen = ({ navigation, onLogin }) => {
                                 placeholder="••••••••"
                                 placeholderTextColor="#94A3B8"
                                 secureTextEntry={!showPassword}
-                                value={password} // <-- Vinculado al estado
-                                onChangeText={setPassword} // <-- Actualiza el estado
+                                value={password}
+                                onChangeText={setPassword}
                             />
                             <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                                 <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#94A3B8" />
@@ -119,11 +108,10 @@ const LoginScreen = ({ navigation, onLogin }) => {
                         </TouchableOpacity>
                     </View>
 
-                    {/* Botón de Login modificado para mostrar carga */}
                     <TouchableOpacity
                         style={styles.loginBtn}
                         onPress={handleLogin}
-                        disabled={loading} // Deshabilita el botón si está cargando
+                        disabled={loading}
                     >
                         {loading ? (
                             <ActivityIndicator color="#FFFFFF" />

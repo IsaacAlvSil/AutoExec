@@ -47,7 +47,25 @@ class CertificacionOut(CertificacionBase):
 
 
 class PerfilUpdate(BaseModel):
+    nombre: Optional[str] = None      
+    apellido: Optional[str] = None  
     puesto_actual: Optional[str] = None
     telefono: Optional[str] = None
     experiencia_anios: Optional[int] = None
     resumen_profesional: Optional[str] = None
+    area: Optional[str] = None
+    ubicacion: Optional[str] = None  
+
+class PerfilCreate(BaseModel):
+    nombre: str
+    apellido: str
+    puesto_actual: Optional[str] = None
+    telefono: Optional[str] = None
+    experiencia_anios: Optional[int] = 0
+    area: Optional[str] = None
+    ubicacion: Optional[str] = None
+    email: str 
+
+class PasswordResetDirecto(BaseModel):
+    email: str
+    nueva_password: str

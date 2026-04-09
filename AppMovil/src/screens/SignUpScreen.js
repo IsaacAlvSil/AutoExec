@@ -1,20 +1,11 @@
 import React, { useState } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    TextInput,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    Alert,
-    ActivityIndicator
+    View, Text, StyleSheet, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
-const API_URL = 'http://192.168.1.72:5000';
+const API_URL = 'http://192.168.1.79:5000';
 
 const SignUpScreen = ({ navigation }) => {
     const [nombre, setNombre] = useState('');
@@ -24,7 +15,6 @@ const SignUpScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(false);
 
     const handleRegister = async () => {
-        // 1. Validaciones básicas locales
         if (!nombre || !email || !password || !confirmPassword) {
             Alert.alert('Error', 'Por favor llena todos los campos.');
             return;
@@ -43,8 +33,6 @@ const SignUpScreen = ({ navigation }) => {
         setLoading(true);
 
         try {
-            // 2. Petición al backend
-            // Usando la ruta que vimos en Swagger: /api/registro
             const response = await fetch(`${API_URL}/api/registro`, {
                 method: 'POST',
                 headers: {
@@ -54,23 +42,19 @@ const SignUpScreen = ({ navigation }) => {
                 body: JSON.stringify({
                     email: email,
                     password: password,
-                    // Si tu backend requiere el nombre, añádelo aquí. 
-                    // Según tu Swagger, pedía 'id_rol', le pondremos 1 por defecto (Candidato)
                     id_rol: 2
                 })
             });
 
             const data = await response.json();
 
-            // 3. Manejo de la respuesta
             if (response.ok) {
                 Alert.alert(
                     '¡Registro Exitoso!',
                     'Tu cuenta ha sido creada. Ahora puedes iniciar sesión.',
-                    [{ text: 'OK', onPress: () => navigation.navigate('Login') }] // Asumiendo que tu ruta se llama 'Login'
+                    [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
                 );
             } else {
-                // Si el backend detecta que el correo ya existe, debería mandar el error aquí
                 Alert.alert('Error en el registro', data.detail || 'No se pudo crear la cuenta.');
             }
         } catch (error) {

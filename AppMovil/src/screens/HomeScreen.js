@@ -4,18 +4,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// 🚨 PON TU IP AQUÍ (Ejemplo: 'http://192.168.1.75:5000')
-const API_URL = 'http://10.16.35.92:5000';
+const API_URL = 'http://192.168.1.79:5000';
 
 const HomeScreen = ({ navigation }) => {
-    // Estados para guardar las vacantes reales y controlar la pantalla de carga
     const [vacantes, setVacantes] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const [userName, setUserName] = useState('Usuario');
     const [userInitials, setUserInitials] = useState('U');
 
-    // useEffect se ejecuta automáticamente cuando entras a esta pantalla
     useEffect(() => {
         fetchVacantes();
         cargarDatosUsuario();
@@ -23,14 +20,11 @@ const HomeScreen = ({ navigation }) => {
 
     const cargarDatosUsuario = async () => {
         try {
-            // Buscamos la clave EXACTA que guardamos en el Login
             const storedEmail = await AsyncStorage.getItem('user_email');
 
             if (storedEmail) {
-                // Cortamos el texto antes del '@' (ej. isaac.perez@empresa.com -> isaac.perez)
                 const emailName = storedEmail.split('@')[0];
 
-                // Capitalizamos la primera letra por estética (Opcional, pero se ve mejor)
                 const nombreFormateado = emailName.charAt(0).toUpperCase() + emailName.slice(1);
 
                 setUserName(nombreFormateado);
@@ -43,12 +37,11 @@ const HomeScreen = ({ navigation }) => {
 
     const fetchVacantes = async () => {
         try {
-            // 👇 Asumo que tu ruta en FastAPI se llama /api/vacantes (Verifícalo en tu Swagger)
             const response = await fetch(`${API_URL}/api/vacantes`);
             const data = await response.json();
 
             if (response.ok) {
-                setVacantes(data); // Guardamos las vacantes de la BD en nuestro estado
+                setVacantes(data);
             } else {
                 Alert.alert('Error', 'No se pudieron cargar las vacantes');
             }
@@ -56,7 +49,7 @@ const HomeScreen = ({ navigation }) => {
             console.error('Error fetching vacantes:', error);
             Alert.alert('Error de conexión', 'Revisa que tu servidor esté encendido y la IP sea correcta.');
         } finally {
-            setLoading(false); // Apagamos la ruedita de carga
+            setLoading(false);
         }
     };
 
@@ -64,20 +57,19 @@ const HomeScreen = ({ navigation }) => {
         <SafeAreaView style={styles.safeArea}>
             <ScrollView style={styles.mainContainer} showsVerticalScrollIndicator={false}>
 
-                {/* 👇 5. Sección de Saludo y Avatar DINÁMICA */}
                 <View style={styles.greetingSection}>
                     <View>
-                        {/* Imprimimos la variable userName */}
+                        {/*variable userName */}
                         <Text style={styles.greetingText}>Hola, {userName}</Text>
                         <Text style={styles.subtitleText}>Tu radar ejecutivo está activo</Text>
                     </View>
                     <View style={styles.avatarContainer}>
-                        {/* Imprimimos la variable userInitials */}
+                        {/* variable userInitials */}
                         <Text style={styles.avatarText}>{userInitials}</Text>
                     </View>
                 </View>
 
-                {/* Sección de Métricas (Tarjetas) */}
+                {/* Sección de Métricas*/}
                 <View style={styles.metricsRow}>
                     <View style={styles.metricCard}>
                         <Ionicons name="eye-outline" size={24} color="#3B82F6" style={styles.metricIcon} />
@@ -104,7 +96,6 @@ const HomeScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>
 
-                {/* Lista de Tarjetas de Vacantes desde la Base de Datos */}
                 {/* Lista de Tarjetas de Vacantes */}
                 <View style={styles.vacanciesContainer}>
                     {loading ? (
@@ -112,12 +103,10 @@ const HomeScreen = ({ navigation }) => {
                     ) : (
                         vacantes.length > 0 ? (
                             vacantes.map((job, index) => (
-                                // 👇 CAMBIO AQUÍ: Envolvemos la tarjeta en un TouchableOpacity
                                 <TouchableOpacity
                                     key={job.id_vacante || index.toString()}
                                     style={styles.jobCard}
                                     activeOpacity={0.8}
-                                    // 👇 ESTA ES LA MAGIA: Navega y envía el objeto 'job' completo
                                     onPress={() => navigation.navigate('DVacante', { vacante: job })}
                                 >
                                     <View style={styles.jobHeader}>

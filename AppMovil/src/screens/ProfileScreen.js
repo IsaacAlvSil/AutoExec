@@ -5,27 +5,26 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // IP conectada a Docker
-const BASE_URL = 'http://10.16.35.92:5000';
+const BASE_URL = 'http://192.168.1.79:5000';
 const API_URL_CERT = `${BASE_URL}/api/certificaciones`;
 
 const ProfileScreen = ({ navigation, onLogout }) => {
-  // 1. ESTADOS DEL PERFIL
   const [perfil, setPerfil] = useState({
-    id_perfil: null, // Agregado para tenerlo siempre a la mano
+    id_perfil: null,
     nombre: 'Cargando...',
     titulo: '...',
-    area: 'Área Profesional',
+    area: 'Cargando...',
     nivel: '...',
     email: '...',
     telefono: '...',
-    ubicacion: 'México',
+    ubicacion: 'Cargando...',
     verificado: false,
     foto: null
   });
+
   const [loadingPerfil, setLoadingPerfil] = useState(true);
   const [idPerfilActual, setIdPerfilActual] = useState(null);
 
-  // 2. ESTADOS DEL CRUD DE CERTIFICACIONES
   const [certificaciones, setCertificaciones] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [certEditandoId, setCertEditandoId] = useState(null);
@@ -36,13 +35,14 @@ const ProfileScreen = ({ navigation, onLogout }) => {
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [formPerfil, setFormPerfil] = useState({
+    nombre: '',
+    apellido: '',
     titulo: '',
     telefono: '',
     area: '',
     nivel: ''
   });
 
-  // 3. CARGAR DATOS AL INICIO
   useEffect(() => {
     cargarDatosPerfil();
   }, []);
@@ -50,176 +50,173 @@ const ProfileScreen = ({ navigation, onLogout }) => {
   const cargarDatosPerfil = async () => {
     try {
       const storedEmail = await AsyncStorage.getItem('user_email');
-      console.log("👀 1. Correo en sesión:", storedEmail);
-
       if (storedEmail) {
         const urlBusqueda = `${BASE_URL}/api/perfiles/email/${storedEmail}`;
-        console.log("👀 2. Buscando perfil en:", urlBusqueda);
-
         const respuesta = await fetch(urlBusqueda);
-        console.log("👀 3. Código de respuesta del servidor:", respuesta.status);
 
         if (respuesta.ok) {
-          const datosDeLaBase = await respuesta.json();
-          console.log("👀 4. ¡Perfil encontrado!", datosDeLaBase);
-
-          setIdPerfilActual(datosDeLaBase.id_perfil);
+          const datos = await respuesta.json();
+          setIdPerfilActual(datos.id_perfil);
 
           setPerfil({
-            id_perfil: datosDeLaBase.id_perfil,
-            nombre: `${datosDeLaBase.nombre} ${datosDeLaBase.apellido}`,
-            titulo: datosDeLaBase.puesto_actual || 'Puesto no especificado',
-            area: 'Área Ejecutiva',
-            nivel: datosDeLaBase.experiencia_anios ? `${datosDeLaBase.experiencia_anios} años de exp.` : 'Sin experiencia',
+            id_perfil: datos.id_perfil,
+            nombre: `${datos.nombre || ''} ${datos.apellido || ''}`.trim() || 'Usuario Nuevo',
+            titulo: datos.puesto_actual || 'Completa tu perfil',
+            area: datos.area || 'Sin área definida',
+            nivel: datos.experiencia_anios ? `${datos.experiencia_anios} años de exp.` : 'Sin experiencia',
             email: storedEmail,
-            telefono: datosDeLaBase.telefono || 'Sin teléfono',
-            ubicacion: 'México',
+            telefono: datos.telefono || 'Sin teléfono',
+            ubicacion: datos.ubicacion || 'Sin ubicación',
             verificado: true,
             foto: null
           });
 
-          obtenerCertificaciones(datosDeLaBase.id_perfil);
+          obtenerCertificaciones(datos.id_perfil);
         } else {
-          // Si falla, vamos a ver qué nos está diciendo FastAPI
-          const errorBackend = await respuesta.text();
-          console.log("👀 5. El servidor rechazó la búsqueda. Razón:", errorBackend);
-
-          const emailName = storedEmail.split('@')[0];
-          setPerfil(prev => ({ ...prev, nombre: emailName, email: storedEmail, titulo: 'Completa tu perfil' }));
+          setPerfil(prev => ({
+            ...prev,
+            nombre: 'Usuario Nuevo',
+            titulo: 'Completa tu perfil',
+            area: 'Sin área definida',
+            ubicacion: 'Sin ubicación',
+            email: storedEmail
+          }));
         }
-      } else {
-        console.log("👀 ERROR: No hay ningún correo guardado en AsyncStorage");
       }
     } catch (error) {
-      console.error("👀 Error catastrofico al cargar:", error);
+      console.error("Error al cargar perfil:", error);
+      setPerfil(prev => ({
+        ...prev,
+        nombre: 'Error de conexión',
+        titulo: 'Intenta más tarde'
+      }));
     } finally {
       setLoadingPerfil(false);
     }
   };
 
   const habilitarEdicion = () => {
+    const nombres = perfil.nombre.split(' ');
     setFormPerfil({
+      nombre: nombres[0] || '',
+      apellido: nombres.slice(1).join(' ') || '',
       titulo: perfil.titulo,
       telefono: perfil.telefono,
       area: perfil.area,
-      nivel: perfil.nivel
+      nivel: perfil.nivel.replace(/[^0-9]/g, '') || '0'
     });
     setIsEditingProfile(true);
   };
 
   const guardarCambiosPerfil = async () => {
-    const idAEditar = idPerfilActual || perfil.id_perfil;
-
-    if (!idAEditar) {
-      Alert.alert("Error", "No se encontró el ID del perfil. Por favor, recarga la aplicación.");
-      return;
-    }
-
     try {
-      const urlDestino = `${BASE_URL}/api/perfiles/${idAEditar}`;
-      console.log("Intentando actualizar en:", urlDestino);
+      const storedEmail = await AsyncStorage.getItem('user_email');
+      const idAEditar = idPerfilActual || perfil.id_perfil;
 
-      const respuesta = await fetch(urlDestino, {
-        method: 'PUT',
+      const datosEnviar = {
+        nombre: formPerfil.nombre,
+        apellido: formPerfil.apellido,
+        puesto_actual: formPerfil.titulo,
+        telefono: formPerfil.telefono,
+        experiencia_anios: parseInt(formPerfil.nivel) || 0,
+        area: formPerfil.area,
+        ubicacion: formPerfil.ubicacion,
+        email: storedEmail
+      };
+
+      const metodo = idAEditar ? 'PUT' : 'POST';
+      const url = idAEditar
+        ? `${BASE_URL}/api/perfiles/${idAEditar}`
+        : `${BASE_URL}/api/perfiles`;
+
+      const respuesta = await fetch(url, {
+        method: metodo,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          puesto_actual: formPerfil.titulo,
-          telefono: formPerfil.telefono
-        })
+        body: JSON.stringify(datosEnviar)
       });
 
       if (respuesta.ok) {
+        const datosGuardados = await respuesta.json();
+
+        if (!idAEditar && datosGuardados.id_perfil) {
+          setIdPerfilActual(datosGuardados.id_perfil);
+        }
+
         setPerfil(prev => ({
           ...prev,
+          id_perfil: idAEditar || datosGuardados.id_perfil,
+          nombre: `${formPerfil.nombre} ${formPerfil.apellido}`.trim(),
           titulo: formPerfil.titulo,
-          telefono: formPerfil.telefono
+          telefono: formPerfil.telefono,
+          nivel: `${formPerfil.nivel} años de exp.`,
+          area: formPerfil.area,
+          ubicacion: formPerfil.ubicacion
         }));
+
         setIsEditingProfile(false);
-        Alert.alert("Éxito", "Perfil actualizado correctamente");
+        Alert.alert("Éxito", idAEditar ? "Perfil actualizado" : "Perfil creado por primera vez");
       } else {
-        const errorDelBackend = await respuesta.json();
-        console.log("Error de FastAPI:", errorDelBackend);
-        Alert.alert("Error del servidor", JSON.stringify(errorDelBackend));
+        Alert.alert("Error", "El servidor no pudo guardar los datos.");
       }
     } catch (error) {
-      console.error("Error al actualizar perfil:", error);
-      Alert.alert("Error", "No se pudo conectar con el servidor");
+      console.error("Error al guardar:", error);
+      Alert.alert("Error de red", "No se pudo conectar con el servidor.");
     }
   };
 
-  // READ Certificaciones
   const obtenerCertificaciones = async (id_perfil) => {
-    if (!id_perfil) return;
     try {
       const respuesta = await fetch(`${API_URL_CERT}/perfil/${id_perfil}`);
-      const datos = await respuesta.json();
-      setCertificaciones(datos);
+      if (respuesta.ok) {
+        const datos = await respuesta.json();
+        setCertificaciones(datos);
+      }
     } catch (error) {
-      console.error("Error GET certificaciones:", error);
+      console.error("Error certificaciones:", error);
     }
   };
 
-  // CREATE y UPDATE Certificaciones
   const guardarCertificacion = async () => {
     if (!formNombre || !formEntidad || !formAño) {
-      Alert.alert("Error", "Por favor llena todos los campos");
+      Alert.alert("Error", "Llena todos los campos");
       return;
     }
-
-    const idUsar = idPerfilActual || perfil.id_perfil;
-    if (!idUsar) {
-      Alert.alert("Error", "No se encontró el perfil del usuario.");
-      return;
-    }
-
     const datosEnviar = {
-      id_perfil: idUsar,
+      id_perfil: idPerfilActual,
       nombre: formNombre,
       institucion: formEntidad,
       anio: parseInt(formAño)
     };
 
     try {
-      const urlFetch = certEditandoId !== null ? `${API_URL_CERT}/${certEditandoId}` : API_URL_CERT;
-      const metodoFetch = certEditandoId !== null ? 'PUT' : 'POST';
-
-      const respuesta = await fetch(urlFetch, {
-        method: metodoFetch,
+      const url = certEditandoId ? `${API_URL_CERT}/${certEditandoId}` : API_URL_CERT;
+      const respuesta = await fetch(url, {
+        method: certEditandoId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(datosEnviar)
       });
 
       if (respuesta.ok) {
         cerrarModal();
-        obtenerCertificaciones(idUsar);
-        Alert.alert("Éxito", certEditandoId !== null ? "Certificación actualizada" : "Certificación guardada");
-      } else {
-        Alert.alert("Error", "No se pudo guardar en la base de datos");
+        obtenerCertificaciones(idPerfilActual);
       }
     } catch (error) {
-      console.error(`Error ${certEditandoId !== null ? 'PUT' : 'POST'}:`, error);
-      Alert.alert("Error", "No se pudo conectar con el servidor");
+      Alert.alert("Error", "No se pudo conectar");
     }
   };
 
-  // DELETE Certificaciones
-  const eliminarCertificacion = (id_certificacion) => {
-    Alert.alert("Eliminar", "¿Estás seguro de que deseas borrarla?", [
-      { text: "Cancelar", style: "cancel" },
+  const eliminarCertificacion = (id) => {
+    Alert.alert("Eliminar", "¿Borrar certificación?", [
+      { text: "No" },
       {
-        text: "Sí, borrar", style: "destructive", onPress: async () => {
-          try {
-            const respuesta = await fetch(`${API_URL_CERT}/${id_certificacion}`, { method: 'DELETE' });
-            if (respuesta.ok) obtenerCertificaciones(idPerfilActual);
-          } catch (error) {
-            console.error("Error DELETE:", error);
-          }
+        text: "Sí", onPress: async () => {
+          await fetch(`${API_URL_CERT}/${id}`, { method: 'DELETE' });
+          obtenerCertificaciones(idPerfilActual);
         }
       }
     ]);
   };
 
-  // FUNCIONES DEL MODAL
   const abrirModalCrear = () => {
     setCertEditandoId(null);
     setFormNombre(''); setFormEntidad(''); setFormAño('');
@@ -232,20 +229,13 @@ const ProfileScreen = ({ navigation, onLogout }) => {
     setModalVisible(true);
   };
 
-  const cerrarModal = () => {
-    setModalVisible(false);
-    setCertEditandoId(null);
-  };
+  const cerrarModal = () => { setModalVisible(false); setCertEditandoId(null); };
 
   const handleLogout = () => {
-    Alert.alert(
-      "Cerrar Sesión",
-      "¿Estás seguro de que deseas salir de tu cuenta?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        { text: "Sí, salir", style: "destructive", onPress: () => { onLogout(); } }
-      ]
-    );
+    Alert.alert("Salir", "¿Cerrar sesión?", [
+      { text: "No" },
+      { text: "Sí", onPress: onLogout }
+    ]);
   };
 
   const Seccion = ({ titulo, icon, children, onAgregar }) => (
@@ -269,39 +259,33 @@ const ProfileScreen = ({ navigation, onLogout }) => {
     <LinearGradient colors={['#0F172A', '#1E293B', '#334155']} style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
-        {/* --- TARJETA PRINCIPAL DEL PERFIL --- */}
         <View style={styles.card}>
           {loadingPerfil ? (
             <ActivityIndicator size="large" color="#3B82F6" style={{ marginVertical: 30 }} />
           ) : (
             <>
               <View style={styles.fotoContainer}>
-                {perfil.foto ? (
-                  <Image source={{ uri: perfil.foto }} style={styles.fotoPerfil} />
-                ) : (
-                  <View style={styles.fotoPlaceholder}>
-                    <Text style={styles.fotoPlaceholderText}>{perfil.nombre.charAt(0)}</Text>
-                  </View>
-                )}
+                <View style={styles.fotoPlaceholder}>
+                  <Text style={styles.fotoPlaceholderText}>{perfil.nombre.charAt(0)}</Text>
+                </View>
                 <TouchableOpacity style={styles.editPhotoBtn}>
                   <Ionicons name="camera" size={16} color="#FFF" />
                 </TouchableOpacity>
               </View>
 
               <View style={styles.infoHeader}>
-                <Text style={styles.nombre}>{perfil.nombre}</Text>
-
-                {/* CONDICIONAL: Modo Edición vs Modo Vista */}
                 {isEditingProfile ? (
-                  <View style={{ width: '100%', paddingHorizontal: 20 }}>
-                    <Text style={styles.labelInput}>Puesto / Título</Text>
-                    <TextInput style={styles.input} value={formPerfil.titulo} onChangeText={(txt) => setFormPerfil({ ...formPerfil, titulo: txt })} />
-
-                    <Text style={styles.labelInput}>Área</Text>
-                    <TextInput style={styles.input} value={formPerfil.area} onChangeText={(txt) => setFormPerfil({ ...formPerfil, area: txt })} />
-
+                  <View style={{ width: '100%' }}>
+                    <Text style={styles.labelInput}>Nombre</Text>
+                    <TextInput style={styles.input} value={formPerfil.nombre} onChangeText={(t) => setFormPerfil({ ...formPerfil, nombre: t })} />
+                    <Text style={styles.labelInput}>Apellido</Text>
+                    <TextInput style={styles.input} value={formPerfil.apellido} onChangeText={(t) => setFormPerfil({ ...formPerfil, apellido: t })} />
+                    <Text style={styles.labelInput}>Puesto</Text>
+                    <TextInput style={styles.input} value={formPerfil.titulo} onChangeText={(t) => setFormPerfil({ ...formPerfil, titulo: t })} />
+                    <Text style={styles.labelInput}>Años de Experiencia</Text>
+                    <TextInput style={styles.input} value={formPerfil.nivel} keyboardType="numeric" onChangeText={(t) => setFormPerfil({ ...formPerfil, nivel: t })} />
                     <Text style={styles.labelInput}>Teléfono</Text>
-                    <TextInput style={styles.input} value={formPerfil.telefono} onChangeText={(txt) => setFormPerfil({ ...formPerfil, telefono: txt })} keyboardType="phone-pad" />
+                    <TextInput style={styles.input} value={formPerfil.telefono} keyboardType="phone-pad" onChangeText={(t) => setFormPerfil({ ...formPerfil, telefono: t })} />
 
                     <View style={styles.modalBotones}>
                       <TouchableOpacity style={[styles.btnModal, styles.btnCancelar]} onPress={() => setIsEditingProfile(false)}>
@@ -314,14 +298,13 @@ const ProfileScreen = ({ navigation, onLogout }) => {
                   </View>
                 ) : (
                   <>
+                    <Text style={styles.nombre}>{perfil.nombre}</Text>
                     <View style={styles.tituloRow}>
                       <Text style={styles.titulo}>{perfil.titulo}</Text>
-                      {perfil.verificado && (
-                        <View style={styles.badgeVerificado}>
-                          <Ionicons name="checkmark-circle" size={14} color="#10B981" style={{ marginRight: 4 }} />
-                          <Text style={styles.badgeTextoVerificado}>Verificado</Text>
-                        </View>
-                      )}
+                      <View style={styles.badgeVerificado}>
+                        <Ionicons name="checkmark-circle" size={14} color="#10B981" />
+                        <Text style={styles.badgeTextoVerificado}> Verificado</Text>
+                      </View>
                     </View>
 
                     <View style={styles.badgesContainer}>
@@ -335,13 +318,9 @@ const ProfileScreen = ({ navigation, onLogout }) => {
                       <View style={styles.contactoRow}><Ionicons name="location-outline" size={16} color="#64748B" /><Text style={styles.contactoItem}>{perfil.ubicacion}</Text></View>
                     </View>
 
-                    {/* Botón para activar la edición */}
-                    <TouchableOpacity
-                      style={{ backgroundColor: '#F1F5F9', paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20, marginTop: 5, flexDirection: 'row', alignItems: 'center' }}
-                      onPress={habilitarEdicion}
-                    >
-                      <Ionicons name="pencil" size={14} color="#475569" style={{ marginRight: 5 }} />
-                      <Text style={{ color: '#475569', fontWeight: 'bold', fontSize: 13 }}>Editar Perfil</Text>
+                    <TouchableOpacity style={styles.btnEditarPerfil} onPress={habilitarEdicion}>
+                      <Ionicons name="pencil" size={14} color="#475569" />
+                      <Text style={styles.btnEditarPerfilText}> Editar Perfil</Text>
                     </TouchableOpacity>
                   </>
                 )}
@@ -350,131 +329,87 @@ const ProfileScreen = ({ navigation, onLogout }) => {
           )}
         </View>
 
-        {/* --- SECCIÓN DE CERTIFICACIONES --- */}
         <Seccion titulo="Certificaciones" icon="ribbon-outline" onAgregar={abrirModalCrear}>
-          {certificaciones.length === 0 ? (
-            <Text style={{ color: '#94A3B8', textAlign: 'center', marginVertical: 10 }}>No hay certificaciones.</Text>
-          ) : (
-            certificaciones.map((item, index) => (
-              <View key={item.id_certificacion} style={[styles.itemLista, index === certificaciones.length - 1 && styles.noBorder]}>
-
-                <View style={styles.certContent}>
-                  <Text style={styles.certNombre}>{item.nombre}</Text>
-                  <Text style={styles.certEntidad}>{item.institucion} • {item.anio}</Text>
-                </View>
-
-                {/* Botones de Acción */}
-                <View style={styles.certAcciones}>
-                  <TouchableOpacity onPress={() => abrirModalEditar(item)} style={styles.btnAccion}>
-                    <Ionicons name="pencil" size={18} color="#3B82F6" />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity onPress={() => eliminarCertificacion(item.id_certificacion)} style={styles.btnAccion}>
-                    <Ionicons name="trash-outline" size={18} color="#EF4444" />
-                  </TouchableOpacity>
-                </View>
-
+          {certificaciones.map((item) => (
+            <View key={item.id_certificacion} style={styles.itemLista}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.certNombre}>{item.nombre}</Text>
+                <Text style={styles.certEntidad}>{item.institucion} • {item.anio}</Text>
               </View>
-            ))
-          )}
+              <View style={{ flexDirection: 'row' }}>
+                <TouchableOpacity onPress={() => abrirModalEditar(item)} style={{ padding: 5 }}><Ionicons name="pencil" size={18} color="#3B82F6" /></TouchableOpacity>
+                <TouchableOpacity onPress={() => eliminarCertificacion(item.id_certificacion)} style={{ padding: 5 }}><Ionicons name="trash-outline" size={18} color="#EF4444" /></TouchableOpacity>
+              </View>
+            </View>
+          ))}
         </Seccion>
 
         <TouchableOpacity style={styles.btnLogout} onPress={handleLogout}>
           <Text style={styles.btnLogoutText}>Cerrar Sesión</Text>
         </TouchableOpacity>
-
         <View style={{ height: 30 }} />
       </ScrollView>
 
-      {/* --- MODAL DE CERTIFICACIONES --- */}
-      <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={cerrarModal}>
+      {/* MODAL CERTIFICACIONES */}
+      <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-
-            <Text style={styles.modalTitulo}>
-              {certEditandoId !== null ? "Editar Certificación" : "Nueva Certificación"}
-            </Text>
-
-            <Text style={styles.labelInput}>Nombre de la Certificación</Text>
-            <TextInput style={styles.input} placeholder="ej. Scrum Master" value={formNombre} onChangeText={setFormNombre} />
-
-            <Text style={styles.labelInput}>Institución Emisora</Text>
-            <TextInput style={styles.input} placeholder="ej. Scrum.org" value={formEntidad} onChangeText={setFormEntidad} />
-
-            <Text style={styles.labelInput}>Año de Emisión</Text>
-            <TextInput style={styles.input} placeholder="ej. 2025" value={formAño} onChangeText={setFormAño} keyboardType="numeric" />
-
+            <Text style={styles.modalTitulo}>{certEditandoId ? "Editar Certificación" : "Nueva Certificación"}</Text>
+            <TextInput style={styles.input} placeholder="Nombre" value={formNombre} onChangeText={setFormNombre} />
+            <TextInput style={styles.input} placeholder="Institución" value={formEntidad} onChangeText={setFormEntidad} />
+            <TextInput style={styles.input} placeholder="Año" value={formAño} onChangeText={setFormAño} keyboardType="numeric" />
             <View style={styles.modalBotones}>
-              <TouchableOpacity style={[styles.btnModal, styles.btnCancelar]} onPress={cerrarModal}>
-                <Text style={styles.txtBtnCancelar}>Cancelar</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={[styles.btnModal, styles.btnGuardar]} onPress={guardarCertificacion}>
-                <Text style={styles.txtBtnGuardar}>{certEditandoId !== null ? "Actualizar" : "Guardar"}</Text>
-              </TouchableOpacity>
+              <TouchableOpacity style={[styles.btnModal, styles.btnCancelar]} onPress={cerrarModal}><Text>Cancelar</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.btnModal, styles.btnGuardar]} onPress={guardarCertificacion}><Text style={{ color: '#FFF' }}>Guardar</Text></TouchableOpacity>
             </View>
-
           </View>
         </View>
       </Modal>
-
-    </LinearGradient >
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: 15, paddingTop: 50 },
-  card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, marginBottom: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5, elevation: 3 },
-
-  fotoContainer: { alignItems: 'center', marginBottom: 15, position: 'relative' },
-  fotoPlaceholder: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#0F172A', justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#F1F5F9' },
+  card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, marginBottom: 15, elevation: 3 },
+  fotoContainer: { alignItems: 'center', marginBottom: 15 },
+  fotoPlaceholder: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#0F172A', justifyContent: 'center', alignItems: 'center' },
   fotoPlaceholderText: { color: '#FFFFFF', fontSize: 36, fontWeight: 'bold' },
-  editPhotoBtn: { position: 'absolute', bottom: 0, right: '35%', backgroundColor: '#3B82F6', width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FFFFFF' },
-
+  editPhotoBtn: { position: 'absolute', bottom: 0, right: '38%', backgroundColor: '#3B82F6', width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FFF' },
   infoHeader: { alignItems: 'center' },
-  nombre: { fontSize: 22, fontWeight: 'bold', color: '#0F172A', marginBottom: 4, textAlign: 'center' },
-  tituloRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', justifyContent: 'center' },
+  nombre: { fontSize: 22, fontWeight: 'bold', color: '#0F172A', marginBottom: 4 },
+  tituloRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   titulo: { fontSize: 15, color: '#64748B', marginRight: 8 },
-  badgeVerificado: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ECFDF5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: '#10B981' },
+  badgeVerificado: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ECFDF5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   badgeTextoVerificado: { color: '#10B981', fontSize: 11, fontWeight: 'bold' },
-
-  badgesContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginBottom: 15 },
+  badgesContainer: { flexDirection: 'row', marginBottom: 15 },
   badgeIndustria: { backgroundColor: '#F1F5F9', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, margin: 4 },
   badgeIndustriaTexto: { color: '#475569', fontSize: 12, fontWeight: '600' },
-
-  contactoContainer: { width: '100%', marginBottom: 10, backgroundColor: '#F8FAFC', padding: 15, borderRadius: 10 },
+  contactoContainer: { width: '100%', backgroundColor: '#F8FAFC', padding: 15, borderRadius: 10, marginBottom: 10 },
   contactoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   contactoItem: { fontSize: 13, color: '#475569', marginLeft: 10 },
-
+  btnEditarPerfil: { backgroundColor: '#F1F5F9', paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20, flexDirection: 'row', alignItems: 'center' },
+  btnEditarPerfilText: { color: '#475569', fontWeight: 'bold', fontSize: 13 },
   sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15, borderBottomWidth: 1, borderBottomColor: '#F1F5F9', paddingBottom: 10 },
   sectionTitleWrap: { flexDirection: 'row', alignItems: 'center' },
-  sectionIcon: { marginRight: 8 },
   tituloSeccion: { fontSize: 16, fontWeight: 'bold', color: '#0F172A' },
   btnAgregar: { width: 28, height: 28, borderRadius: 6, backgroundColor: '#3B82F6', justifyContent: 'center', alignItems: 'center' },
-
-  itemLista: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  certContent: { flex: 1, paddingRight: 10 },
-  certNombre: { fontSize: 14, color: '#0F172A', fontWeight: '600', marginBottom: 2 },
+  itemLista: { flexDirection: 'row', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  certNombre: { fontSize: 14, color: '#0F172A', fontWeight: '600' },
   certEntidad: { fontSize: 12, color: '#94A3B8' },
-  certAcciones: { flexDirection: 'row' },
-  btnAccion: { padding: 6, marginLeft: 5 },
-  noBorder: { borderBottomWidth: 0 },
-
-  btnLogout: { backgroundColor: 'transparent', paddingVertical: 15, marginTop: 5, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#EF4444', borderRadius: 12 },
-  btnLogoutText: { color: '#EF4444', fontSize: 16, fontWeight: 'bold' },
-
-  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
-  modalContent: { width: '85%', backgroundColor: 'white', borderRadius: 15, padding: 20 },
-  modalTitulo: { fontSize: 18, fontWeight: 'bold', marginBottom: 15, color: '#0F172A', textAlign: 'center' },
-  labelInput: { fontSize: 12, color: '#64748B', marginBottom: 5, fontWeight: 'bold', marginLeft: 2 },
-  input: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 8, padding: 10, marginBottom: 15, fontSize: 14, backgroundColor: '#F8FAFC' },
-  modalBotones: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
+  btnLogout: { paddingVertical: 15, alignItems: 'center', borderWidth: 1, borderColor: '#EF4444', borderRadius: 12 },
+  btnLogoutText: { color: '#EF4444', fontWeight: 'bold' },
+  labelInput: { fontSize: 12, color: '#64748B', fontWeight: 'bold', marginTop: 10 },
+  input: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 8, padding: 10, marginTop: 5, backgroundColor: '#F8FAFC' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { width: '85%', backgroundColor: '#FFF', borderRadius: 15, padding: 20 },
+  modalTitulo: { fontSize: 18, fontWeight: 'bold', marginBottom: 15, textAlign: 'center' },
+  modalBotones: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 },
   btnModal: { flex: 1, padding: 12, borderRadius: 8, alignItems: 'center', marginHorizontal: 5 },
   btnCancelar: { backgroundColor: '#F1F5F9' },
   btnGuardar: { backgroundColor: '#3B82F6' },
-  txtBtnCancelar: { color: '#64748B', fontWeight: 'bold' },
-  txtBtnGuardar: { color: 'white', fontWeight: 'bold' }
+  txtBtnGuardar: { color: '#FFF', fontWeight: 'bold' }
 });
 
 export default ProfileScreen;
