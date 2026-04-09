@@ -1,0 +1,202 @@
+version: '3.8'
+
+services:
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: autoexec_postgres
+    environment:
+      POSTGRES_DB: autoexec
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - autoexec_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d autoexec"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # API Backend (FastAPI)
+  api:
+    build: ./autoExec/backend
+    container_name: autoexec_api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://admin:password123@postgres:5432/autoexec
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - autoexec_net
+    restart: unless-stopped
+
+  # Web Frontend (Laravel)
+  web:
+    build: ./autoExec/frontend
+    container_name: autoexec_web
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./autoExec/frontend:/var/www/html
+    working_dir: /var/www/html
+    command: php artisan serve --host=0.0.0.0 --port=8080
+    environment:
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=autoexec
+      - DB_USERNAME=admin
+      - DB_PASSWORD=password123
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - autoexec_net
+    restart: unless-stopped
+
+  # Prometheus - Métricas
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: autoexec_prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - autoexec_net
+    restart: unless-stopped
+    depends_on:
+      - api
+      - web
+      - postgres
+
+  # Grafana - Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: autoexec_grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin123
+      GF_USERS_ALLOW_SIGN_UP: false
+      GF_INSTALL_PLUGINS: "grafana-clock-panel,grafana-simple-json-datasource"
+      GF_SECURITY_ALLOW_EMBEDDING: true
+      GF_AUTH_ANONYMOUS_ENABLED: false
+      GF_LOG_LEVEL: info
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - autoexec_net
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+  # Portainer - Administración
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: autoexec_portainer
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - portainer_data:/data
+    networks:
+      - autoexec_net
+    restart: unless-stopped
+
+  # Firewall CrowdSec
+  crowdsec:
+    image: crowdsecurity/crowdsec:latest
+    container_name: autoexec_crowdsec
+    environment:
+      GID: "1000"
+      COLLECTIONS: "crowdsecurity/nginx crowdsecurity/whitelist-good-ips"
+      DISABLE_PARSERS: "docker"
+    volumes:
+      - crowdsec_db:/var/lib/crowdsec/data
+      - crowdsec_config:/etc/crowdsec
+      - /var/log:/var/log/host:ro
+    networks:
+      - autoexec_net
+    restart: unless-stopped
+
+  # Exportadores de métricas
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: autoexec_postgres_exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://admin:password123@postgres:5432/autoexec?sslmode=disable"
+      PG_EXPORTER_EXCLUDE_DATABASES: "template0,template1"
+    networks:
+      - autoexec_net
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - prometheus
+
+  node_exporter:
+    image: prom/node-exporter:latest
+    container_name: autoexec_node_exporter
+    networks:
+      - autoexec_net
+    restart: unless-stopped
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--collector.netdev.device-exclude=^(veth|docker|br-).*'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: autoexec_redis
+    volumes:
+      - redis_data:/data
+    networks:
+      - autoexec_net
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+volumes:
+  postgres_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  crowdsec_db:
+    driver: local
+  crowdsec_config:
+    driver: local
+  portainer_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  autoexec_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1

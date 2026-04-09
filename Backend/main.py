@@ -16,3 +16,7 @@ app.include_router(perfiles_router.router)
 @app.get("/")
 def read_root():
     return {"mensaje": "¡FastAPI funcionando!"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "service": "FastAPI"}

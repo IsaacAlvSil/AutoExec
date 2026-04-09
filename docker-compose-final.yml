@@ -1,0 +1,119 @@
+version: '3.8'
+
+services:
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: autoexec_postgres
+    environment:
+      POSTGRES_DB: autoexec
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - autoexec_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d autoexec"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # API Backend 1 (FastAPI)
+  api1:
+    build: ./Backend
+    container_name: autoexec_api1
+    environment:
+      DATABASE_URL: postgresql://admin:password123@postgres:5432/autoexec
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - autoexec_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Backend 2 (FastAPI)
+  api2:
+    build: ./Backend
+    container_name: autoexec_api2
+    environment:
+      DATABASE_URL: postgresql://admin:password123@postgres:5432/autoexec
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - autoexec_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Web simple (Nginx)
+  web:
+    image: nginx:alpine
+    container_name: autoexec_web
+    volumes:
+      - ./web-content:/usr/share/nginx/html
+    networks:
+      - autoexec_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # HAProxy Load Balancer
+  haproxy:
+    image: haproxy:2.9
+    container_name: autoexec_haproxy
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    ports:
+      - "8080:80"     # Web balanceado
+      - "8000:8000"   # APIs balanceadas
+      - "8404:8404"   # Stats
+      - "8405:8405"   # Prometheus Exporter
+    depends_on:
+      - api1
+      - api2
+      - web
+    networks:
+      - autoexec_net
+
+  # Prometheus para monitoreo
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: autoexec_prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks:
+      - autoexec_net
+
+  # Grafana para visualización
+  grafana:
+    image: grafana/grafana:latest
+    container_name: autoexec_grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin123
+    depends_on:
+      - prometheus
+    networks:
+      - autoexec_net
+
+volumes:
+  postgres_data:
+
+networks:
+  autoexec_net:
+    driver: bridge

@@ -1,0 +1,32 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'haproxy'
+    static_configs:
+      - targets: ['haproxy:8405']
+    scrape_interval: 5s
+
+  - job_name: 'api1'
+    static_configs:
+      - targets: ['api1:8000']
+    metrics_path: '/metrics'
+
+  - job_name: 'api2'
+    static_configs:
+      - targets: ['api2:8000']
+    metrics_path: '/metrics'
+
+  - job_name: 'web'
+    static_configs:
+      - targets: ['web:80']
+    metrics_path: '/metrics'
+
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']

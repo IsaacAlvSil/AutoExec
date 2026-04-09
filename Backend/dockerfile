@@ -4,6 +4,9 @@ FROM python:3.11-slim
 # Le decimos a Docker en qué carpeta trabajar adentro del contenedor
 WORKDIR /Backend
 
+# Instalar curl para health checks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
 # Copiamos las dependencias y las instalamos
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
