@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://192.168.1.79:5000';
+import { API_URL } from '../config';
 
 const LoginScreen = ({ navigation, onLogin }) => {
     const [email, setEmail] = useState('');

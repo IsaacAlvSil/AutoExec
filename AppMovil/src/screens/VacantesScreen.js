@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { API_URL } from '../config';
+
+//pruebasWeb
 
 const VacantesScreen = ({ navigation }) => {
     const [vacantes, setVacantes] = useState([]);
@@ -12,7 +15,7 @@ const VacantesScreen = ({ navigation }) => {
 
     const fetchVacantes = async () => {
         try {
-            const response = await fetch('http:/192.168.1.79:5000/api/vacantes');
+            const response = await fetch(`${API_URL}/api/vacantes`);
             const data = await response.json();
             setVacantes(data);
         } catch (error) {

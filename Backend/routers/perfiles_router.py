@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from data.db import get_db
 from models.models import Perfil, Usuario 
 from models.schemas import PerfilUpdate, PerfilCreate
+from datetime import datetime
 
 router = APIRouter(prefix="/api/perfiles",
                    tags=["Perfiles"]
@@ -33,7 +34,10 @@ def actualizar_perfil(id_perfil: int, datos: PerfilUpdate, db: Session = Depends
 
     for key, value in update_data.items():
         setattr(db_perfil, key, value)
-        
+    
+    db_perfil.fecha_actualizacion = datetime.now()
+
+
     db.commit()
     db.refresh(db_perfil)
     
@@ -57,6 +61,8 @@ def crear_perfil(perfil_data: PerfilCreate, db: Session = Depends(get_db)):
         puesto_actual=perfil_data.puesto_actual,
         telefono=perfil_data.telefono,
         experiencia_anios=perfil_data.experiencia_anios,
+        ubicacion=perfil_data.ubicacion,
+        fecha_actualizacion=datetime.now()
         
         
     )

@@ -59,7 +59,7 @@ class Perfil(Base):
     puesto_actual          = Column(String(150))
     experiencia_anios      = Column(Integer)
     resumen_profesional    = Column(Text)
-    fecha_actualizacion    = Column(DateTime)
+    fecha_actualizacion = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
 
     usuario = relationship("Usuario", back_populates="perfil")
 

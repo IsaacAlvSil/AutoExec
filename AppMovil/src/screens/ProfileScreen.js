@@ -3,9 +3,10 @@ import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, Modal, Tex
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from '../config';
 
 // IP conectada a Docker
-const BASE_URL = 'http://192.168.1.79:5000';
+const BASE_URL = API_URL;
 const API_URL_CERT = `${BASE_URL}/api/certificaciones`;
 
 const ProfileScreen = ({ navigation, onLogout }) => {
@@ -40,6 +41,7 @@ const ProfileScreen = ({ navigation, onLogout }) => {
     titulo: '',
     telefono: '',
     area: '',
+    ubicacion: '',
     nivel: ''
   });
 
@@ -103,6 +105,7 @@ const ProfileScreen = ({ navigation, onLogout }) => {
       titulo: perfil.titulo,
       telefono: perfil.telefono,
       area: perfil.area,
+      ubicacion: perfil.ubicacion,
       nivel: perfil.nivel.replace(/[^0-9]/g, '') || '0'
     });
     setIsEditingProfile(true);
@@ -286,6 +289,8 @@ const ProfileScreen = ({ navigation, onLogout }) => {
                     <TextInput style={styles.input} value={formPerfil.nivel} keyboardType="numeric" onChangeText={(t) => setFormPerfil({ ...formPerfil, nivel: t })} />
                     <Text style={styles.labelInput}>Teléfono</Text>
                     <TextInput style={styles.input} value={formPerfil.telefono} keyboardType="phone-pad" onChangeText={(t) => setFormPerfil({ ...formPerfil, telefono: t })} />
+                    <Text style={styles.labelInput}>Ubicación</Text>
+                    <TextInput style={styles.input} value={formPerfil.ubicacion} onChangeText={(t) => setFormPerfil({ ...formPerfil, ubicacion: t })} placeholder="Ej. Querétaro, México" />
 
                     <View style={styles.modalBotones}>
                       <TouchableOpacity style={[styles.btnModal, styles.btnCancelar]} onPress={() => setIsEditingProfile(false)}>
