@@ -6,6 +6,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_URL = 'http://192.168.1.79:5000';
 
+//PruebasWeb
+
 const HomeScreen = ({ navigation }) => {
     const [vacantes, setVacantes] = useState([]);
     const [loading, setLoading] = useState(true);
