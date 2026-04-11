@@ -1,0 +1,86 @@
+# Configuración de CrowdSec - Firewall Dinámico
+common:
+  log_level: info
+  log_dir: /var/log/crowdsec/
+  work_dir: /var/lib/crowdsec/
+  data_dir: /var/lib/crowdsec/data/
+  pid_dir: /var/run/crowdsec/
+  daemonize: true
+  http_server: true
+  http_listen: 0.0.0.0:8080
+  prometheus: true
+  prometheus_listen: 0.0.0.0:6060
+
+# Configuración de la base de datos
+db_config:
+  type: sqlite
+  db_path: /var/lib/crowdsec/data/crowdsec.db
+  max_open_conns: 100
+
+# Configuración de los parsers
+parsers:
+  - crowdsecurity/nginx-logs
+  - crowdsecurity/http-logs
+  - crowdsecurity/whitelist-good-ips
+
+# Configuración de las colecciones
+collections:
+  - crowdsecurity/nginx
+  - crowdsecurity/http-logs
+  - crowdsecurity/whitelist-good-ips
+  - crowdsecurity/wordpress
+
+# Configuración de los bouncers
+bouncers:
+  - name: autoexec-bouncer
+    type: firewall
+    api_key: autoexec-bouncer-key
+    disabled: false
+
+# Configuración de los escenarios
+scenarios:
+  - crowdsecurity/http-bad-request
+  - crowdsecurity/http-sqli-detected
+  - crowdsecurity/http-xss-detected
+  - crowdsecurity/http-path-traversal-probing
+  - crowdsecurity/http-suspicious-user-agent
+  - crowdsecurity/http-brute-force
+  - crowdsecurity/http-crawl-non-statics
+  - crowdsecurity/http-probing
+  - crowdsecurity/http-open-redirect
+  - crowdsecurity/http-scan
+  - crowdsecurity/http-ddos
+  - crowdsecurity/http-bad-user-agent
+  - crowdsecurity/http-ip-reputation
+  - crowdsecurity/http-nuclei-template
+  - crowdsecurity/http-wp-xmlrpc
+  - crowdsecurity/http-wp-login
+  - crowdsecurity/http-wp-xmlrpc-brute
+  - crowdsecurity/http-wp-login-brute
+
+# Configuración del API
+api:
+  client:
+    credentials_path: /etc/crowdsec/local_api_credentials.yaml
+  server:
+    listen_uri: 0.0.0.0:8080
+    tls:
+      cert_file: /etc/crowdsec/ssl/cert.pem
+      key_file: /etc/crowdsec/ssl/key.pem
+
+# Configuración de los logs
+config_paths:
+  log_dir: /var/log/crowdsec/
+  data_dir: /var/lib/crowdsec/data/
+  simulation_path: /etc/crowdsec/simulation.yaml
+  hub_dir: /etc/crowdsec/hub/
+  index_path: /etc/crowdsec/hub/.index.json
+  notification_dir: /etc/crowdsec/notifications/
+  plugin_dir: /etc/crowdsec/plugins/
+  bouncer_dir: /etc/crowdsec/bouncers/
+
+# Configuración de las métricas
+metrics:
+  enabled: true
+  prometheus: true
+  prometheus_listen: 0.0.0.0:6060

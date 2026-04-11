@@ -1,0 +1,50 @@
+# Configuración de adquisición de logs para CrowdSec
+# Logs de la aplicación web
+filenames:
+  - /var/log/app/access.log
+  - /var/log/app/error.log
+  - /var/log/app/nginx.log
+  - /var/log/app/apache.log
+  - /var/log/app/web.log
+
+# Configuración de labels para identificar los logs
+labels:
+  type: web
+  service: autoexec
+  environment: production
+
+# Configuración de los logs de nginx
+nginx:
+  filenames:
+    - /var/log/nginx/access.log
+    - /var/log/nginx/error.log
+  labels:
+    type: nginx
+    service: web
+
+# Configuración de los logs del sistema
+system:
+  filenames:
+    - /var/log/auth.log
+    - /var/log/syslog
+    - /var/log/kern.log
+  labels:
+    type: system
+    service: host
+
+# Configuración de los logs de Docker
+docker:
+  filenames:
+    - /var/lib/docker/containers/*/*.log
+  labels:
+    type: docker
+    service: containers
+
+# Configuración de los logs de la aplicación
+app:
+  filenames:
+    - /var/log/app/*.log
+  labels:
+    type: application
+    service: autoexec
+    environment: production

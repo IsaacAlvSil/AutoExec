@@ -1,0 +1,99 @@
+# Configuración del Bouncer de CrowdSec
+# Firewall dinámico con bloqueo automático
+
+# Configuración general
+bouncer:
+  name: autoexec-bouncer
+  type: firewall
+  api_key: autoexec-bouncer-key
+  disabled: false
+  log_level: info
+
+# Configuración del firewall
+firewall:
+  type: iptables
+  chain: INPUT
+  action: DROP
+  # Tiempo de bloqueo (4 horas)
+  duration: 4h
+  # Máximo de IPs bloqueadas
+  max_blocked_ips: 10000
+  # Limpiar IPs bloqueadas antiguas
+  cleanup_frequency: 1h
+
+# Configuración del API
+api:
+  url: http://crowdsec:8080
+  timeout: 10s
+  retry: 3
+  # API key para autenticación
+  api_key: autoexec-bouncer-key
+
+# Configuración de los logs
+logging:
+  level: info
+  file: /var/log/crowdsec/bouncer.log
+  format: json
+
+# Configuración de las decisiones
+decisions:
+  # Tipos de decisiones a procesar
+  types:
+    - ban
+    - captcha
+    - throttle
+  # Acciones a tomar
+  actions:
+    ban: DROP
+    captcha: ACCEPT
+    throttle: ACCEPT
+  # Tiempos de bloqueo
+  durations:
+    ban: 4h
+    captcha: 1h
+    throttle: 30m
+
+# Configuración de las IPs
+ips:
+  # IPs permitidas (whitelist)
+  whitelist:
+    - 127.0.0.1
+    - 172.20.0.0/16
+    - 192.168.0.0/16
+    - 10.0.0.0/8
+  # IPs bloqueadas permanentemente
+  blacklist: []
+
+# Configuración de las reglas
+rules:
+  # Reglas de bloqueo automático
+  auto_block:
+    # Máximo de intentos fallidos
+    max_attempts: 5
+    # Tiempo para contar intentos
+    time_window: 1m
+    # Tiempo de bloqueo
+    block_duration: 4h
+    # Escenarios a bloquear
+    scenarios:
+      - crowdsecurity/http-bad-request
+      - crowdsecurity/http-sqli-detected
+      - crowdsecurity/http-xss-detected
+      - crowdsecurity/http-path-traversal-probing
+      - crowdsecurity/http-suspicious-user-agent
+      - crowdsecurity/http-brute-force
+      - crowdsecurity/http-probing
+      - crowdsecurity/http-ddos
+      - crowdsecurity/http-bad-user-agent
+      - crowdsecurity/http-ip-reputation
+
+# Configuración de notificaciones
+notifications:
+  # Notificar cuando una IP es bloqueada
+  on_block: true
+  # Notificar cuando una IP es desbloqueada
+  on_unblock: true
+  # Formato de notificación
+  format: json
+  # Destino de notificaciones
+  webhook: http://localhost:8080/api/notifications
