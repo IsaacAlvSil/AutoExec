@@ -14,7 +14,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
-const API_URL = 'http://192.168.1.79:5000';
+import API_URL from '../config';
 
 const RecoverPasswordScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');

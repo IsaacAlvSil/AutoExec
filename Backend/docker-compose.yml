@@ -31,14 +31,40 @@ services:
       DATABASE_URL: postgresql://admin:123456@db:5432/automotriz_db
     depends_on:
       db:
-        condition: service_healthy   # ← espera a que Postgres esté LISTO
+        condition: service_healthy
     volumes:
       - .:/app
     networks:
       - autoexec-net
 
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: laravel_web
+    restart: always
+    ports:
+      - "8080:8000"
+    environment:
+      APP_NAME: "Automotive Recruitment Admin"
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8080
+      API_BASE_URL: http://api:8000/api
+      API_TIMEOUT: "30"
+    depends_on:
+      - api
+    volumes:
+      - ./web:/var/www/html
+      - composer_cache:/root/.composer
+    networks:
+      - autoexec-net
+
 volumes:
   postgres_data_v2:
+  composer_cache:
 
 networks:
   autoexec-net:
+
+

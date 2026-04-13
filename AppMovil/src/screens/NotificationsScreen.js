@@ -1,57 +1,136 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl, ScrollView, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import API_URL from '../config';
 
 const NotificationsScreen = () => {
-    const [notificaciones, setNotificaciones] = useState([
-        {
-            id: '1',
-            tipo: 'match',
-            titulo: '¡Nuevo Top Match!',
-            mensaje: 'Hay una nueva vacante de Plant Manager (Tier 1) que hace 92% de match con tu perfil.',
-            tiempo: 'Hace 2 horas',
-            leida: false,
-        },
-        {
-            id: '2',
-            tipo: 'estatus',
-            titulo: 'Actualización de Solicitud',
-            mensaje: 'Tu postulación para "Director de Supply Chain" ha sido revisada por la empresa.',
-            tiempo: 'Hace 5 horas',
-            leida: false,
-        },
-        {
-            id: '3',
-            tipo: 'mensaje',
-            titulo: 'Mensaje de Reclutador',
-            mensaje: 'Hola, nos gustaría agendar una entrevista técnica contigo para la próxima semana.',
-            tiempo: 'Ayer',
-            leida: true,
-        },
-        {
-            id: '4',
-            tipo: 'sistema',
-            titulo: 'Perfil Verificado',
-            mensaje: 'Tus documentos de certificación IATF 16949 han sido validados exitosamente.',
-            tiempo: 'Hace 2 días',
-            leida: true,
-        },
-    ]);
+    const [notificaciones, setNotificaciones] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+
+    // 1. NUEVO ESTADO PARA EL FILTRO ACTIVO
+    const [filtroActivo, setFiltroActivo] = useState('todas');
+
+    useEffect(() => {
+        fetchNotificaciones();
+    }, []);
+
+    const fetchNotificaciones = async () => {
+        try {
+            // 1. Obtenemos tu correo guardado en el celular
+            const storedEmail = await AsyncStorage.getItem('user_email');
+
+            if (!storedEmail) {
+                console.warn("No se encontró el correo del usuario logueado");
+                setLoading(false);
+                return;
+            }
+
+            // 2. Llamamos a nuestra nueva ruta pasándole el correo
+            const response = await fetch(`${API_URL}/api/notificaciones/usuario/email/${storedEmail}`);
+            const data = await response.json();
+
+
+            if (response.ok) {
+                setNotificaciones(data);
+            } else {
+                console.error("Error del servidor:", data.detail);
+            }
+        } catch (error) {
+            console.error("Error al cargar notificaciones:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        setTimeout(async () => {
+            await fetchNotificaciones();
+            setRefreshing(false);
+        }, 1000);
+    };
+
+    // 5. FUNCIONES PARA ELIMINAR
+    const confirmarEliminacion = (id) => {
+        Alert.alert(
+            "Eliminar Notificación",
+            "¿Estás seguro de que deseas eliminar esta notificación?",
+            [
+                { text: "Cancelar", style: "cancel" },
+                {
+                    text: "Eliminar",
+                    style: "destructive",
+                    onPress: () => ejecutarEliminacion(id)
+                }
+            ]
+        );
+    };
+
+    const ejecutarEliminacion = async (id) => {
+        setNotificaciones((prev) => prev.filter(item => (item.id_notificacion || item.id) !== id));
+
+        try {
+            await fetch(`${API_URL}/api/notificaciones/${id}`, {
+                method: 'DELETE',
+            });
+        } catch (error) {
+            console.error("Error al eliminar en la BD:", error);
+        }
+    };
 
     const getIcono = (tipo) => {
-        switch (tipo) {
+        switch (tipo?.toLowerCase()) {
+            case 'match': return { name: 'star', color: '#EAB308' };
+            case 'estatus': return { name: 'time', color: '#3B82F6' };
+            case 'mensaje': return { name: 'chatbubbles', color: '#10B981' };
+            case 'sistema': return { name: 'settings', color: '#64748B' };
             default: return { name: 'notifications', color: '#64748B' };
         }
     };
 
+    // 2. LÓGICA DE FILTRADO
+    const notificacionesFiltradas = notificaciones.filter((item) => {
+        if (filtroActivo === 'todas') return true;
+
+        if (filtroActivo === 'nuevas') {
+            // Asegúrate de usar el nombre exacto de la columna de fecha que manda tu backend
+            // Puede ser item.fecha_creacion, item.fecha, item.created_at, etc.
+            const fechaBackend = item.fecha_creacion;
+
+            if (!fechaBackend) return false; // Si por alguna razón no trae fecha, no la mostramos
+
+            const fechaNotificacion = new Date(fechaBackend);
+            const fechaActual = new Date();
+
+            // La resta nos da la diferencia en milisegundos
+            const diferenciaMilisegundos = fechaActual - fechaNotificacion;
+
+            // Convertimos los milisegundos a días (1000 ms * 60 seg * 60 min * 24 hrs)
+            const diferenciaDias = diferenciaMilisegundos / (1000 * 60 * 60 * 24);
+
+            // Solo pasará el filtro si tiene estrictamente menos de 2 días de antigüedad
+            return diferenciaDias < 2;
+        }
+
+        if (filtroActivo === 'revision') {
+            return item.tipo?.toLowerCase() === 'estatus';
+        }
+
+        return true;
+    });
+
     const renderItem = ({ item }) => {
         const iconConfig = getIcono(item.tipo);
+        const idNotificacion = item.id_notificacion || item.id; // Tomamos el ID correcto
 
         return (
             <TouchableOpacity
                 style={[styles.notificationCard, !item.leida && styles.tarjetaNoLeida]}
-                onPress={() => console.log('Abrir notificación:', item.id)}
+                onPress={() => console.log('Abrir notificación:', idNotificacion)}
             >
                 {!item.leida && <View style={styles.unreadDot} />}
 
@@ -64,60 +143,139 @@ const NotificationsScreen = () => {
                     <Text style={styles.mensajeNotificacion} numberOfLines={2}>{item.mensaje}</Text>
                     <Text style={styles.tiempoTexto}>{item.tiempo}</Text>
                 </View>
+
+                {/* NUEVO: BOTÓN DE ELIMINAR */}
+                <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => confirmarEliminacion(idNotificacion)}
+                >
+                    <Ionicons name="trash-outline" size={22} color="#EF4444" />
+                </TouchableOpacity>
             </TouchableOpacity>
         );
     };
 
+    if (loading) {
+        return (
+            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#0F172A' }]}>
+                <ActivityIndicator size="large" color="#3B82F6" />
+            </View>
+        );
+    }
+
     return (
-        <LinearGradient
-            colors={['#0F172A', '#1E293B', '#334155']}
-            style={styles.container}
-        >
+        <LinearGradient colors={['#0F172A', '#1E293B', '#334155']} style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Notificaciones</Text>
                 <TouchableOpacity onPress={() => console.log('Marcar todas como leídas')}>
-                    <Text style={styles.markReadText}>Marcar leídas</Text>
                 </TouchableOpacity>
             </View>
 
+            {/* 3. BARRA DE FILTROS (TABS) */}
+            <View style={styles.filterContainer}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+                    <TouchableOpacity
+                        style={[styles.filterTab, filtroActivo === 'todas' && styles.filterTabActive]}
+                        onPress={() => setFiltroActivo('todas')}
+                    >
+                        <Text style={[styles.filterTabText, filtroActivo === 'todas' && styles.filterTabTextActive]}>Todas</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.filterTab, filtroActivo === 'nuevas' && styles.filterTabActive]}
+                        onPress={() => setFiltroActivo('nuevas')}
+                    >
+                        <Text style={[styles.filterTabText, filtroActivo === 'nuevas' && styles.filterTabTextActive]}>Nuevas</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.filterTab, filtroActivo === 'revision' && styles.filterTabActive]}
+                        onPress={() => setFiltroActivo('revision')}
+                    >
+                        <Text style={[styles.filterTabText, filtroActivo === 'revision' && styles.filterTabTextActive]}>En Revisión</Text>
+                    </TouchableOpacity>
+                </ScrollView>
+            </View>
+
             <FlatList
-                data={notificaciones}
-                keyExtractor={(item) => item.id}
+                // 4. PASAMOS EL ARREGLO FILTRADO A LA LISTA
+                data={notificacionesFiltradas}
+                keyExtractor={(item) => (item.id ? item.id.toString() : Math.random().toString())}
                 renderItem={renderItem}
                 contentContainerStyle={styles.listContainer}
                 showsVerticalScrollIndicator={false}
+                // Si el filtro no arroja resultados, mostramos este mensaje
+                ListEmptyComponent={<Text style={styles.emptyText}>No hay notificaciones en esta categoría.</Text>}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={['#3B82F6']}
+                        progressBackgroundColor="#ffffff"
+                        tintColor="#ffffff"
+                    />
+                }
             />
         </LinearGradient>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
+    container: { flex: 1 },
     header: {
+        flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         paddingHorizontal: 20,
         paddingTop: 60,
-        paddingBottom: 20,
+        paddingBottom: 15,
     },
     headerTitle: {
         fontSize: 28,
         fontWeight: 'bold',
         color: '#FFFFFF',
-        marginBottom: 8,
     },
     markReadText: {
         color: '#93C5FD',
         fontSize: 14,
         fontWeight: '600',
-        marginBottom: 4,
     },
-    listContainer: {
-        paddingHorizontal: 15,
-        paddingBottom: 20,
+    // Estilos nuevos para los filtros
+    filterContainer: {
+        paddingBottom: 15,
     },
+    filterScroll: {
+        paddingHorizontal: 20,
+    },
+    filterTab: {
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        marginRight: 10,
+        borderWidth: 1,
+        borderColor: 'transparent',
+    },
+    filterTabActive: {
+        backgroundColor: '#3B82F6',
+        borderColor: '#60A5FA',
+    },
+    filterTabText: {
+        color: '#94A3B8',
+        fontWeight: '600',
+        fontSize: 14,
+    },
+    filterTabTextActive: {
+        color: '#FFFFFF',
+    },
+    emptyText: {
+        color: '#94A3B8',
+        textAlign: 'center',
+        marginTop: 40,
+        fontSize: 16,
+    },
+    // Tus estilos anteriores
+    listContainer: { paddingHorizontal: 15, paddingBottom: 20 },
     notificationCard: {
         flexDirection: 'row',
         backgroundColor: '#FFFFFF',
@@ -131,11 +289,7 @@ const styles = StyleSheet.create({
         elevation: 3,
         position: 'relative',
     },
-    tarjetaNoLeida: {
-        backgroundColor: '#F8FAFC',
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
-    },
+    tarjetaNoLeida: { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0' },
     unreadDot: {
         position: 'absolute',
         top: 16,
@@ -154,10 +308,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginRight: 15,
     },
-    textContainer: {
-        flex: 1,
-        justifyContent: 'center',
-    },
+    textContainer: { flex: 1, justifyContent: 'center' },
     tituloNotificacion: {
         fontSize: 16,
         fontWeight: 'bold',
@@ -165,17 +316,14 @@ const styles = StyleSheet.create({
         marginBottom: 4,
         paddingRight: 15,
     },
-    mensajeNotificacion: {
-        fontSize: 14,
-        color: '#475569',
-        marginBottom: 6,
-        lineHeight: 20,
+    mensajeNotificacion: { fontSize: 14, color: '#475569', marginBottom: 6, lineHeight: 20 },
+    tiempoTexto: { fontSize: 12, color: '#94A3B8', fontWeight: '500' },
+
+    deleteButton: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingLeft: 10,
     },
-    tiempoTexto: {
-        fontSize: 12,
-        color: '#94A3B8',
-        fontWeight: '500',
-    }
 });
 
 export default NotificationsScreen;
