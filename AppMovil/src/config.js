@@ -1,2 +1,5 @@
-// Cambiar ip
-export const API_URL = 'http://192.168.1.79:5000';
+// config.js
+
+const API_URL = 'http://192.168.1.71:5000';
+
+export default API_URL;

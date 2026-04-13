@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, toString } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { API_URL } from '../config';
+import API_URL from '../config';
 
 const LoginScreen = ({ navigation, onLogin }) => {
     const [email, setEmail] = useState('');
@@ -36,6 +36,7 @@ const LoginScreen = ({ navigation, onLogin }) => {
 
             if (response.ok) {
                 await AsyncStorage.setItem('user_email', email);
+                await AsyncStorage.setItem('user_id', data.usuario.id_usuario.toString());
                 Alert.alert('¡Éxito!', 'Sesión iniciada correctamente');
                 if (onLogin) onLogin(data);
             } else {

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from data.db import get_db
 from models.models import Perfil, Usuario 
 from models.schemas import PerfilUpdate, PerfilCreate
-from datetime import datetime
+from models.models import Perfil, Usuario, Certificacion
 
 router = APIRouter(prefix="/api/perfiles",
                    tags=["Perfiles"]
@@ -23,6 +23,57 @@ def obtener_perfil_por_email(email: str, db: Session = Depends(get_db)):
     
     return db_perfil
 
+
+@router.get("/")
+def obtener_todos_perfiles(db: Session = Depends(get_db)):
+    perfiles = db.query(Perfil)\
+        .join(Usuario, Perfil.id_usuario == Usuario.id_usuario)\
+        .filter(Usuario.id_rol == 2)\
+        .all()
+    
+    resultado = []
+    for p in perfiles:
+        usuario = db.query(Usuario).filter(Usuario.id_usuario == p.id_usuario).first()
+        certificaciones = db.query(Certificacion)\
+            .filter(Certificacion.id_perfil == p.id_perfil)\
+            .all()
+        resultado.append({
+            "id_perfil":           p.id_perfil,
+            "id_usuario":          p.id_usuario,
+            "nombre":              p.nombre,
+            "apellido":            p.apellido,
+            "telefono":            p.telefono,
+            "puesto_actual":       p.puesto_actual,
+            "experiencia_anios":   p.experiencia_anios,
+            "resumen_profesional": p.resumen_profesional,
+            "ubicacion":           p.ubicacion,
+            "email":               usuario.email if usuario else None,
+            "certificaciones": [
+                {
+                    "id_certificacion": c.id_certificacion,
+                    "nombre":           c.nombre,
+                    "institucion":      c.institucion,
+                    "anio":             c.anio,
+                } for c in certificaciones
+            ]
+        })
+    return resultado
+
+
+@router.get("/{id_perfil}/certificaciones")
+def obtener_certificaciones(id_perfil: int, db: Session = Depends(get_db)):
+    return db.query(Certificacion)\
+        .filter(Certificacion.id_perfil == id_perfil)\
+        .all()
+
+
+@router.get("/usuario/{id_usuario}")
+def obtener_perfil_por_usuario(id_usuario: int, db: Session = Depends(get_db)):
+    db_perfil = db.query(Perfil).filter(Perfil.id_usuario == id_usuario).first()
+    if not db_perfil:
+        raise HTTPException(status_code=404, detail="Perfil no encontrado")
+    return db_perfil
+
 @router.put("/{id_perfil}")
 def actualizar_perfil(id_perfil: int, datos: PerfilUpdate, db: Session = Depends(get_db)):
     db_perfil = db.query(Perfil).filter(Perfil.id_perfil == id_perfil).first()
@@ -34,10 +85,7 @@ def actualizar_perfil(id_perfil: int, datos: PerfilUpdate, db: Session = Depends
 
     for key, value in update_data.items():
         setattr(db_perfil, key, value)
-    
-    db_perfil.fecha_actualizacion = datetime.now()
-
-
+        
     db.commit()
     db.refresh(db_perfil)
     
@@ -61,8 +109,6 @@ def crear_perfil(perfil_data: PerfilCreate, db: Session = Depends(get_db)):
         puesto_actual=perfil_data.puesto_actual,
         telefono=perfil_data.telefono,
         experiencia_anios=perfil_data.experiencia_anios,
-        ubicacion=perfil_data.ubicacion,
-        fecha_actualizacion=datetime.now()
         
         
     )

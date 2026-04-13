@@ -1,18 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { API_URL } from '../config';
+import API_URL from '../config';
 
 
 const HomeScreen = ({ navigation }) => {
     const [vacantes, setVacantes] = useState([]);
     const [loading, setLoading] = useState(true);
-
     const [userName, setUserName] = useState('Usuario');
     const [userInitials, setUserInitials] = useState('U');
+    const [procesosActivos, setProcesosActivos] = useState(0);
+    const [totalPostulaciones, setTotalPostulaciones] = useState(0);
+    const [refreshing, setRefreshing] = useState(false);
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+
+        await fetchVacantes();
+        await cargarDatosUsuario();
+        setRefreshing(false);
+    };
 
     useEffect(() => {
         fetchVacantes();
@@ -22,17 +32,33 @@ const HomeScreen = ({ navigation }) => {
     const cargarDatosUsuario = async () => {
         try {
             const storedEmail = await AsyncStorage.getItem('user_email');
+            const storedUserId = await AsyncStorage.getItem('user_id');
 
             if (storedEmail) {
                 const emailName = storedEmail.split('@')[0];
-
                 const nombreFormateado = emailName.charAt(0).toUpperCase() + emailName.slice(1);
-
                 setUserName(nombreFormateado);
                 setUserInitials(nombreFormateado.substring(0, 2).toUpperCase());
             }
+
+            if (storedUserId) {
+                fetchProcesosActivos(storedUserId);
+                fetchTotalPostulaciones(storedUserId);
+            }
         } catch (error) {
             console.error('Error cargando usuario:', error);
+        }
+    };
+
+    const fetchTotalPostulaciones = async (userId) => {
+        try {
+            const response = await fetch(`${API_URL}/api/postulaciones/usuario/${userId}/total`);
+            if (response.ok) {
+                const data = await response.json();
+                setTotalPostulaciones(data.total);
+            }
+        } catch (error) {
+            console.error('Error fetching total postulaciones:', error);
         }
     };
 
@@ -54,9 +80,32 @@ const HomeScreen = ({ navigation }) => {
         }
     };
 
+    const fetchProcesosActivos = async (userId) => {
+        try {
+            const response = await fetch(`${API_URL}/api/postulaciones/usuario/${userId}/activas`, {
+                headers: {
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+
+                setProcesosActivos(data.procesos_activos);
+            } else {
+                console.log("Error en status de procesos activos:", response.status);
+            }
+        } catch (error) {
+            console.error('Error fetching procesos activos:', error);
+        }
+    };
+
     return (
+
         <SafeAreaView style={styles.safeArea}>
-            <ScrollView style={styles.mainContainer} showsVerticalScrollIndicator={false}>
+            <ScrollView
+                style={styles.mainContainer} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#ffffff']} tintColor="#dedede" />}>
 
                 <View style={styles.greetingSection}>
                     <View>
@@ -65,26 +114,30 @@ const HomeScreen = ({ navigation }) => {
                         <Text style={styles.subtitleText}>Tu radar ejecutivo está activo</Text>
                     </View>
                     <View style={styles.avatarContainer}>
-                        {/* variable userInitials */}
-                        <Text style={styles.avatarText}>{userInitials}</Text>
+                        <TouchableOpacity>
+                            {/* variable userInitials */}
+                            <Text onPress={() => navigation.navigate('Perfil')} style={styles.avatarText}>{userInitials}</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
 
                 {/* Sección de Métricas*/}
                 <View style={styles.metricsRow}>
                     <View style={styles.metricCard}>
-                        <Ionicons name="eye-outline" size={24} color="#3B82F6" style={styles.metricIcon} />
-                        <Text style={styles.metricNumber}>18</Text>
-                        <Text style={styles.metricLabel}>Vistas a tu{'\n'}perfil</Text>
+                        <Ionicons name="send-outline" size={24} color="#3B82F6" style={styles.metricIcon} />
+                        <Text style={styles.metricNumber}>{totalPostulaciones}</Text>
+                        <Text style={styles.metricLabel}>Postulaciones{'\n'}Enviadas</Text>
                     </View>
+
+                    {/* Búsquedas Top */}
                     <View style={styles.metricCard}>
                         <Ionicons name="search-outline" size={24} color="#10B981" style={styles.metricIcon} />
-                        <Text style={styles.metricNumber}>5</Text>
+                        <Text style={styles.metricNumber}>{vacantes.length}</Text>
                         <Text style={styles.metricLabel}>Búsquedas{'\n'}Top</Text>
                     </View>
                     <View style={styles.metricCard}>
                         <Ionicons name="briefcase-outline" size={24} color="#F59E0B" style={styles.metricIcon} />
-                        <Text style={styles.metricNumber}>2</Text>
+                        <Text style={styles.metricNumber}>{procesosActivos}</Text>
                         <Text style={styles.metricLabel}>Procesos{'\n'}Activos</Text>
                     </View>
                 </View>
@@ -146,7 +199,7 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#0F172A',
         paddingTop: Platform.OS === 'android' ? 25 : 0,
     },
     mainContainer: {

@@ -69,3 +69,45 @@ class PerfilCreate(BaseModel):
 class PasswordResetDirecto(BaseModel):
     email: str
     nueva_password: str
+
+# --- ESQUEMAS PARA NOTIFICACIONES ---
+class NotificacionCreate(BaseModel):
+    id_usuario: Optional[int] = None 
+    tipo: str = "sistema"
+    titulo: str
+    mensaje: str
+
+class NotificacionUpdate(BaseModel):
+    leida: Optional[bool] = None
+
+
+
+class VacanteCreate(BaseModel):
+    titulo: str
+    descripcion: str
+    salario_ofrecido: float
+    estado: str = "Activa"
+    ubicacion: Optional[str] = None
+    modalidad: Optional[str] = None
+    nivel_ingles: Optional[str] = None
+    id_departamento: Optional[int] = None
+    id_reclutador: Optional[int] = None
+    fecha_cierre: Optional[str] = None
+
+class VacanteUpdate(BaseModel):
+    titulo: Optional[str] = None
+    descripcion: Optional[str] = None
+    salario_ofrecido: Optional[float] = None
+    estado: Optional[str] = None
+    ubicacion: Optional[str] = None
+    modalidad: Optional[str] = None
+    nivel_ingles: Optional[str] = None
+    id_departamento: Optional[int] = None
+    id_reclutador: Optional[int] = None
+    fecha_cierre: Optional[str] = None
+
+
+class PostulacionCreate(BaseModel):
+    id_usuario: int
+    id_vacante: int
+    id_estado: int = 1  

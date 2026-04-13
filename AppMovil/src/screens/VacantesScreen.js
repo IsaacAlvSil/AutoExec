@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Platform, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { API_URL } from '../config';
 
 //pruebasWeb
 
+import API_URL from '../config';
+
 const VacantesScreen = ({ navigation }) => {
     const [vacantes, setVacantes] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    const [refreshing, setRefreshing] = useState(false);
 
     useEffect(() => {
         fetchVacantes();
@@ -25,37 +29,67 @@ const VacantesScreen = ({ navigation }) => {
         }
     };
 
+    const onRefresh = () => {
+        setRefreshing(true);
+
+        setTimeout(async () => {
+            await fetchVacantes();
+            setRefreshing(false);
+        }, 1000);
+    };
+
     if (loading) {
         return (
             <View style={styles.center}>
-                <ActivityIndicator size="large" color="#3B82F6" />
+                <ActivityIndicator size="large" color="#ffffff" />
             </View>
         );
     }
 
     return (
         <LinearGradient
-            colors={['#0F172A', '#1E293B', '#334155']}
+            colors={['#0F172A', '#1E293B', '#46576e']}
             style={styles.container}
         >
-            <Text style={styles.title}>Todas las Vacantes</Text>
 
             <FlatList
                 data={vacantes}
                 keyExtractor={(item) => (item.id_vacante ? item.id_vacante.toString() : Math.random().toString())}
-                renderItem={({ item }) => (
-                    <TouchableOpacity
-                        style={styles.card}
-                        activeOpacity={0.7}
-                        onPress={() => navigation.navigate('DVacante', { vacante: item })}
-                    >
-                        <Text style={styles.jobTitle}>{item.titulo}</Text>
 
-                        <Text style={styles.company}>Sueldo: ${item.salario_ofrecido}</Text>
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={['#3B82F6']}
+                        progressBackgroundColor="#f5f5f5"
+                        tintColor="#ffffff"
+                    />
+                }
 
-                        {item.estado === 'Activa' && <Text style={styles.urgent}>Activa!</Text>}
-                    </TouchableOpacity>
-                )}
+                renderItem={({ item }) => {
+                    const isActiva = item.estado?.toLowerCase() === 'activa';
+
+                    return (
+                        <TouchableOpacity
+                            style={[styles.card, !isActiva && styles.cardInactive]}
+                            activeOpacity={0.7}
+                            disabled={!isActiva}
+                            onPress={() => navigation.navigate('DVacante', { vacante: item })}
+                        >
+                            <Text style={[styles.jobTitle, !isActiva && styles.textInactive]}>
+                                {item.titulo}
+                            </Text>
+
+                            <Text style={styles.company}>Sueldo: ${item.salario_ofrecido}</Text>
+
+                            {isActiva ? (
+                                <Text style={styles.urgent}>Activa</Text>
+                            ) : (
+                                <Text style={styles.closed}>Inactiva</Text>
+                            )}
+                        </TouchableOpacity>
+                    );
+                }}
                 ListFooterComponent={<View style={{ height: 30 }} />}
             />
         </LinearGradient>
@@ -92,9 +126,33 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 4,
     },
-    jobTitle: { fontSize: 18, fontWeight: 'bold', color: '#0F172A' },
-    company: { fontSize: 16, color: '#64748B', marginTop: 5 },
-    urgent: { color: '#038c25', fontWeight: 'bold', marginTop: 5 }
+    cardInactive: {
+        backgroundColor: '#E2E8F0',
+        opacity: 0.8,
+    },
+    jobTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#0F172A'
+    },
+    textInactive: {
+        color: '#94A3B8',
+    },
+    company: {
+        fontSize: 16,
+        color: '#64748B',
+        marginTop: 5
+    },
+    urgent: {
+        color: '#038c25', // Verde
+        fontWeight: 'bold',
+        marginTop: 8
+    },
+    closed: {
+        color: '#EF4444', // Rojo
+        fontWeight: 'bold',
+        marginTop: 8
+    }
 });
 
 export default VacantesScreen;

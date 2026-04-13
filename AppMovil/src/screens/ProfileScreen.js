@@ -1,13 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, Modal, TextInput, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, Modal, TextInput, Alert, ActivityIndicator, RefreshControl, KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from '../config';
 
-// IP conectada a Docker
-const BASE_URL = API_URL;
+const BASE_URL = 'http://192.168.1.71:5000';
 const API_URL_CERT = `${BASE_URL}/api/certificaciones`;
+
+const PUESTOS_PREDETERMINADOS = [
+  "Desarrollador Frontend",
+  "Desarrollador Backend",
+  "Desarrollador Fullstack",
+  "Ingeniero de Software",
+  "Analista de Datos",
+  "Diseñador UX/UI",
+  "Gerente de Proyectos",
+  "Soporte Técnico",
+  "Supervisor",
+  "Otro"
+];
 
 const ProfileScreen = ({ navigation, onLogout }) => {
   const [perfil, setPerfil] = useState({
@@ -30,6 +46,21 @@ const ProfileScreen = ({ navigation, onLogout }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [certEditandoId, setCertEditandoId] = useState(null);
 
+  const [refreshing, setRefreshing] = useState(false);
+
+  const [formUbicacion, setFormUbicacion] = useState('');
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+
+    await cargarDatosPerfil();
+
+    setRefreshing(false);
+  }, []);
+
+  const [modalPuestoVisible, setModalPuestoVisible] = useState(false);
+  const [esPuestoOtro, setEsPuestoOtro] = useState(false);
+
   const [formNombre, setFormNombre] = useState('');
   const [formEntidad, setFormEntidad] = useState('');
   const [formAño, setFormAño] = useState('');
@@ -41,7 +72,6 @@ const ProfileScreen = ({ navigation, onLogout }) => {
     titulo: '',
     telefono: '',
     area: '',
-    ubicacion: '',
     nivel: ''
   });
 
@@ -99,19 +129,33 @@ const ProfileScreen = ({ navigation, onLogout }) => {
 
   const habilitarEdicion = () => {
     const nombres = perfil.nombre.split(' ');
+    const tituloActual = perfil.titulo !== 'Completa tu perfil' ? perfil.titulo : '';
+
+    const esPredeterminado = PUESTOS_PREDETERMINADOS.includes(tituloActual);
+
+    if (tituloActual && !esPredeterminado) {
+      setEsPuestoOtro(true);
+    } else {
+      setEsPuestoOtro(false);
+    }
+
     setFormPerfil({
       nombre: nombres[0] || '',
       apellido: nombres.slice(1).join(' ') || '',
-      titulo: perfil.titulo,
-      telefono: perfil.telefono,
-      area: perfil.area,
-      ubicacion: perfil.ubicacion,
+      titulo: tituloActual,
+      telefono: perfil.telefono !== 'Sin teléfono' ? perfil.telefono : '',
+      area: perfil.area !== 'Sin área definida' ? perfil.area : '',
       nivel: perfil.nivel.replace(/[^0-9]/g, '') || '0'
     });
     setIsEditingProfile(true);
   };
 
   const guardarCambiosPerfil = async () => {
+    if (esPuestoOtro && !formPerfil.titulo.trim()) {
+      Alert.alert("Atención", "Por favor especifica tu puesto.");
+      return;
+    }
+
     try {
       const storedEmail = await AsyncStorage.getItem('user_email');
       const idAEditar = idPerfilActual || perfil.id_perfil;
@@ -192,7 +236,7 @@ const ProfileScreen = ({ navigation, onLogout }) => {
     };
 
     try {
-      const url = certEditandoId ? `${API_URL_CERT}/${certEditandoId}` : API_URL_CERT;
+      const url = certEditandoId ? `${API_URL_CERT}/${certEditandoId}` : `${API_URL_CERT}/`;
       const respuesta = await fetch(url, {
         method: certEditandoId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -260,11 +304,11 @@ const ProfileScreen = ({ navigation, onLogout }) => {
 
   return (
     <LinearGradient colors={['#0F172A', '#1E293B', '#334155']} style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-
+      <ScrollView
+        showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#000000']} tintColor="#ffffff" />}>
         <View style={styles.card}>
           {loadingPerfil ? (
-            <ActivityIndicator size="large" color="#3B82F6" style={{ marginVertical: 30 }} />
+            <ActivityIndicator size="large" color="#3B 82F6" style={{ marginVertical: 30 }} />
           ) : (
             <>
               <View style={styles.fotoContainer}>
@@ -281,16 +325,43 @@ const ProfileScreen = ({ navigation, onLogout }) => {
                   <View style={{ width: '100%' }}>
                     <Text style={styles.labelInput}>Nombre</Text>
                     <TextInput style={styles.input} value={formPerfil.nombre} onChangeText={(t) => setFormPerfil({ ...formPerfil, nombre: t })} />
+
                     <Text style={styles.labelInput}>Apellido</Text>
                     <TextInput style={styles.input} value={formPerfil.apellido} onChangeText={(t) => setFormPerfil({ ...formPerfil, apellido: t })} />
+
                     <Text style={styles.labelInput}>Puesto</Text>
-                    <TextInput style={styles.input} value={formPerfil.titulo} onChangeText={(t) => setFormPerfil({ ...formPerfil, titulo: t })} />
+                    <TouchableOpacity
+                      style={[styles.input, { justifyContent: 'center' }]}
+                      onPress={() => setModalPuestoVisible(true)}
+                    >
+                      <Text style={{ color: (formPerfil.titulo || esPuestoOtro) ? '#0F172A' : '#94A3B8' }}>
+                        {esPuestoOtro ? "Otro (Especificar)" : (formPerfil.titulo || "Selecciona un puesto...")}
+                      </Text>
+                    </TouchableOpacity>
+
+                    {esPuestoOtro && (
+                      <TextInput
+                        style={[styles.input, { marginTop: 10, borderColor: '#3B82F6', borderWidth: 1.5 }]}
+                        placeholder="Escribe tu puesto específico..."
+                        value={formPerfil.titulo}
+                        onChangeText={(t) => setFormPerfil({ ...formPerfil, titulo: t })}
+                        autoFocus
+                      />
+                    )}
+
                     <Text style={styles.labelInput}>Años de Experiencia</Text>
                     <TextInput style={styles.input} value={formPerfil.nivel} keyboardType="numeric" onChangeText={(t) => setFormPerfil({ ...formPerfil, nivel: t })} />
+
                     <Text style={styles.labelInput}>Teléfono</Text>
                     <TextInput style={styles.input} value={formPerfil.telefono} keyboardType="phone-pad" onChangeText={(t) => setFormPerfil({ ...formPerfil, telefono: t })} />
-                    <Text style={styles.labelInput}>Ubicación</Text>
-                    <TextInput style={styles.input} value={formPerfil.ubicacion} onChangeText={(t) => setFormPerfil({ ...formPerfil, ubicacion: t })} placeholder="Ej. Querétaro, México" />
+
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Ubicación (Ej: CDMX, México)"
+                      value={formUbicacion}
+                      onChangeText={setFormUbicacion}
+                    />
+
 
                     <View style={styles.modalBotones}>
                       <TouchableOpacity style={[styles.btnModal, styles.btnCancelar]} onPress={() => setIsEditingProfile(false)}>
@@ -357,19 +428,92 @@ const ProfileScreen = ({ navigation, onLogout }) => {
 
       {/* MODAL CERTIFICACIONES */}
       <Modal visible={modalVisible} transparent animationType="slide">
+        {/* TouchableWithoutFeedback detecta toques fuera del teclado para ocultarlo */}
+        <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+          <View style={styles.modalOverlay}>
+
+            {/* KeyboardAvoidingView empuja el contenido hacia arriba */}
+            <KeyboardAvoidingView
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
+              style={{ width: '100%', alignItems: 'center' }}
+            >
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitulo}>{certEditandoId ? "Editar Certificación" : "Nueva Certificación"}</Text>
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="Nombre"
+                  value={formNombre}
+                  onChangeText={setFormNombre}
+                  returnKeyType="next" // Cambia el botón a "Siguiente"
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Institución"
+                  value={formEntidad}
+                  onChangeText={setFormEntidad}
+                  returnKeyType="next"
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Año"
+                  value={formAño}
+                  onChangeText={setFormAño}
+                  keyboardType="numeric"
+                  returnKeyType="done" // Cambia el botón a "Listo"
+                  onSubmitEditing={() => Keyboard.dismiss()} // Oculta el teclado al dar Enter
+                />
+
+                <View style={styles.modalBotones}>
+                  <TouchableOpacity style={[styles.btnModal, styles.btnCancelar]} onPress={cerrarModal}>
+                    <Text>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.btnModal, styles.btnGuardar]} onPress={guardarCertificacion}>
+                    <Text style={{ color: '#FFF' }}>Guardar</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </KeyboardAvoidingView>
+
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* MODAL SELECCION DE PUESTO */}
+      <Modal visible={modalPuestoVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitulo}>{certEditandoId ? "Editar Certificación" : "Nueva Certificación"}</Text>
-            <TextInput style={styles.input} placeholder="Nombre" value={formNombre} onChangeText={setFormNombre} />
-            <TextInput style={styles.input} placeholder="Institución" value={formEntidad} onChangeText={setFormEntidad} />
-            <TextInput style={styles.input} placeholder="Año" value={formAño} onChangeText={setFormAño} keyboardType="numeric" />
-            <View style={styles.modalBotones}>
-              <TouchableOpacity style={[styles.btnModal, styles.btnCancelar]} onPress={cerrarModal}><Text>Cancelar</Text></TouchableOpacity>
-              <TouchableOpacity style={[styles.btnModal, styles.btnGuardar]} onPress={guardarCertificacion}><Text style={{ color: '#FFF' }}>Guardar</Text></TouchableOpacity>
-            </View>
+          <View style={[styles.modalContent, { maxHeight: '70%' }]}>
+            <Text style={styles.modalTitulo}>Selecciona tu Puesto</Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {PUESTOS_PREDETERMINADOS.map((puesto, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.itemPuesto}
+                  onPress={() => {
+                    if (puesto === "Otro") {
+                      setEsPuestoOtro(true);
+                      setFormPerfil({ ...formPerfil, titulo: '' }); // Limpiamos para que escriba
+                    } else {
+                      setEsPuestoOtro(false);
+                      setFormPerfil({ ...formPerfil, titulo: puesto }); // Asignamos el predeterminado
+                    }
+                    setModalPuestoVisible(false);
+                  }}
+                >
+                  <Text style={styles.txtItemPuesto}>{puesto}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={[styles.btnModal, styles.btnCancelar, { marginTop: 20 }]}
+              onPress={() => setModalPuestoVisible(false)}
+            >
+              <Text>Cancelar</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
+
     </LinearGradient>
   );
 };
@@ -406,7 +550,7 @@ const styles = StyleSheet.create({
   btnLogout: { paddingVertical: 15, alignItems: 'center', borderWidth: 1, borderColor: '#EF4444', borderRadius: 12 },
   btnLogoutText: { color: '#EF4444', fontWeight: 'bold' },
   labelInput: { fontSize: 12, color: '#64748B', fontWeight: 'bold', marginTop: 10 },
-  input: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 8, padding: 10, marginTop: 5, backgroundColor: '#F8FAFC' },
+  input: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 8, padding: 10, marginTop: 5, backgroundColor: '#F8FAFC', minHeight: 40 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { width: '85%', backgroundColor: '#FFF', borderRadius: 15, padding: 20 },
   modalTitulo: { fontSize: 18, fontWeight: 'bold', marginBottom: 15, textAlign: 'center' },
@@ -414,7 +558,9 @@ const styles = StyleSheet.create({
   btnModal: { flex: 1, padding: 12, borderRadius: 8, alignItems: 'center', marginHorizontal: 5 },
   btnCancelar: { backgroundColor: '#F1F5F9' },
   btnGuardar: { backgroundColor: '#3B82F6' },
-  txtBtnGuardar: { color: '#FFF', fontWeight: 'bold' }
+  txtBtnGuardar: { color: '#FFF', fontWeight: 'bold' },
+  itemPuesto: { paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  txtItemPuesto: { fontSize: 15, color: '#334155', textAlign: 'center' }
 });
 
 export default ProfileScreen;

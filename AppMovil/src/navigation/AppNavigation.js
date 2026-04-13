@@ -22,7 +22,7 @@ function MainTabs({ onLogout }) {
         <Tab.Navigator
             screenOptions={({ route }) => ({
                 headerShown: true,
-                tabBarActiveTintColor: '#002E5D',
+                tabBarActiveTintColor: '#003b75eb',
                 tabBarInactiveTintColor: 'gray',
                 tabBarIcon: ({ focused, color, size }) => {
                     let iconName;
@@ -35,8 +35,8 @@ function MainTabs({ onLogout }) {
                 },
             })}
         >
-            <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Inicio' }} />
-            <Tab.Screen name="Solicitudes" component={VacantesScreen} options={{ title: 'Vacantes Disponibles' }} />
+            <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Inicio', headerShown: false }} />
+            <Tab.Screen name="Solicitudes" component={VacantesScreen} options={{ title: 'Vacantes Disponibles', headerShown: true }} />
             <Tab.Screen name="Notificaciones" component={NotificationsScreen} options={{ title: 'Notificaciones' }} />
 
             <Tab.Screen name="Perfil">

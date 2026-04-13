@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, Text, Numeric, Date, Da
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from data.db import Base
+from datetime import datetime
 
 # ──────────────────────────────────────────────
 # Tabla: roles
@@ -59,8 +60,10 @@ class Perfil(Base):
     puesto_actual          = Column(String(150))
     experiencia_anios      = Column(Integer)
     resumen_profesional    = Column(Text)
-    fecha_actualizacion = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
+    ubicacion           = Column(String(255), nullable=True)
+    fecha_actualizacion    = Column(DateTime)
 
+    certificaciones = relationship("Certificacion", back_populates="perfil", cascade="all, delete-orphan")
     usuario = relationship("Usuario", back_populates="perfil")
 
 
@@ -229,12 +232,12 @@ class Notificacion(Base):
     __tablename__ = "notificaciones"
 
     id_notificacion = Column(Integer, primary_key=True, index=True)
-    id_usuario      = Column(Integer, ForeignKey("usuarios.id_usuario", ondelete="CASCADE"))
+    id_usuario      = Column(Integer, ForeignKey("usuarios.id_usuario"), nullable=True)
+    tipo            = Column(String(50), default="sistema")
     titulo          = Column(String(150))
     mensaje         = Column(Text)
-    leido           = Column(Boolean, default=False)
     leida           = Column(Boolean, default=False)
-    fecha_envio     = Column(DateTime, server_default=func.now())
+    fecha_envio     = Column(DateTime, default=datetime.now)
 
     usuario = relationship("Usuario", back_populates="notificaciones")
 
@@ -278,3 +281,5 @@ class Certificacion(Base):
     nombre = Column(String(150), nullable=False)
     institucion = Column(String(150), nullable=False)
     anio = Column(Integer)
+
+    perfil = relationship("Perfil", back_populates="certificaciones")
