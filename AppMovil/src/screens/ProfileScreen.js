@@ -9,7 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = 'http://192.168.1.71:5000';
+const BASE_URL = 'http://172.21.36.20:5000';
 const API_URL_CERT = `${BASE_URL}/api/certificaciones`;
 
 const PUESTOS_PREDETERMINADOS = [

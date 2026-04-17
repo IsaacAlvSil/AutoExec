@@ -7,22 +7,22 @@
 
     <!-- Header -->
     <div class="mb-8">
-        <h1 class="text-2xl font-bold text-white">Dashboard</h1>
-        <p class="text-gray-400 text-sm mt-1">Bienvenido, {{ session('user')['email'] ?? '' }}</p>
+        <h1 class="text-2xl font-bold text-black">Dashboard</h1>
+        <p class="text-black-400 text-sm mt-1">Bienvenido, {{ session('user')['email'] ?? '' }}</p>
     </div>
 
     <!-- Tarjetas -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="bg-gray-800 border border-gray-700 rounded-xl p-6">
-            <p class="text-gray-400 text-sm mb-1">Total Vacantes</p>
+        <div class="bg-blue-800 border border-blue-900 shadow-sm rounded-xl p-6">
+            <p class="text-white text-sm mb-1">Total Vacantes</p>
             <p class="text-3xl font-bold text-white">{{ $stats['total_vacantes'] ?? 0 }}</p>
         </div>
-        <div class="bg-gray-800 border border-gray-700 rounded-xl p-6">
-            <p class="text-gray-400 text-sm mb-1">Total Postulaciones</p>
+        <div class="bg-blue-800 border border-blue-900 shadow-sm rounded-xl p-6">
+            <p class="text-white text-sm mb-1">Total Postulaciones</p>
             <p class="text-3xl font-bold text-white">{{ array_sum(array_column($postVacanteData, 'total')) }}</p>
         </div>
-        <div class="bg-gray-800 border border-gray-700 rounded-xl p-6">
-            <p class="text-gray-400 text-sm mb-1">Departamentos activos</p>
+        <div class="bg-blue-800 border border-blue-900 shadow-sm rounded-xl p-6">
+            <p class="text-white text-sm mb-1">Departamentos activos</p>
             <p class="text-3xl font-bold text-white">{{ count($postDeptoData) }}</p>
         </div>
     </div>
@@ -31,16 +31,16 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
         <!-- Vacantes por Modalidad (Dona) -->
-        <div class="bg-gray-800 border border-gray-700 rounded-xl p-6">
-            <h2 class="text-white font-semibold mb-4">Vacantes por modalidad</h2>
+        <div class="bg-white border border-blue-800 rounded-xl p-6">
+            <h2 class="text-black font-semibold mb-4">Vacantes por modalidad</h2>
             <div class="relative h-64">
                 <canvas id="modalidadChart"></canvas>
             </div>
         </div>
 
         <!-- Postulaciones por Departamento (Barras) -->
-        <div class="bg-gray-800 border border-gray-700 rounded-xl p-6">
-            <h2 class="text-white font-semibold mb-4">Postulaciones por departamento</h2>
+        <div class="bg-white border border-blue-800 rounded-xl p-6">
+            <h2 class="text-black font-semibold mb-4">Postulaciones por departamento</h2>
             <div class="relative h-64">
                 <canvas id="departamentoChart"></canvas>
             </div>
@@ -48,24 +48,24 @@
 
     </div>
 
-    <!-- Postulaciones por Vacante (Barras horizontales) -->
-    <div class="bg-gray-800 border border-gray-700 rounded-xl p-6 mb-6">
-        <h2 class="text-white font-semibold mb-4">Postulaciones por vacante</h2>
+    <!-- Postulaciones por Vacante -->
+    <div class="bg-white border border-blue-800 rounded-xl p-6 mb-6">
+        <h2 class="text-black font-semibold mb-4">Postulaciones por vacante</h2>
         <div class="relative h-64">
             <canvas id="vacanteChart"></canvas>
         </div>
     </div>
 
     <!-- Vacantes recientes -->
-    <div class="bg-gray-800 border border-gray-700 rounded-xl p-6">
+    <div class="bg-white border border-blue-800 rounded-xl p-6">
         <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-semibold text-white">Vacantes recientes</h2>
+            <h2 class="text-lg font-semibold text-black">Vacantes recientes</h2>
             <a href="{{ route('vacantes.index') }}" class="text-sm text-red-400 hover:text-red-300">Ver todas →</a>
         </div>
         @if(!empty($stats['vacantes']))
         <table class="w-full text-sm">
             <thead>
-                <tr class="text-gray-400 border-b border-gray-700">
+                <tr class="text-black-400 border-b border-gray-400">
                     <th class="text-left pb-3">Título</th>
                     <th class="text-left pb-3">Departamento</th>
                     <th class="text-left pb-3">Estado</th>
@@ -73,11 +73,11 @@
             </thead>
             <tbody>
                 @foreach(array_slice($stats['vacantes'], 0, 5) as $vacante)
-                <tr class="border-b border-gray-700 hover:bg-gray-700">
-                    <td class="py-3 text-white">{{ $vacante['titulo'] ?? '—' }}</td>
-                    <td class="py-3 text-gray-400">{{ $vacante['id_departamento'] ?? '—' }}</td>
+                <tr class="border-b border-gray-700 hover:bg-blue-200">
+                    <td class="py-3 text-black">{{ $vacante['titulo'] ?? '—' }}</td>
+                    <td class="py-3 text-black-400">{{ $vacante['id_departamento'] ?? '—' }}</td>
                     <td class="py-3">
-                        <span class="bg-green-800 text-green-300 text-xs px-2 py-1 rounded-full">
+                        <span class="bg-green-600 text-white text-xs px-2 py-1 rounded-full">
                             {{ $vacante['estado'] ?? 'activo' }}
                         </span>
                     </td>
@@ -113,7 +113,7 @@
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { labels: { color: '#9CA3AF' } }
+                legend: { labels: { color: '#000000' } }
             }
         }
     });
@@ -135,8 +135,8 @@
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-                x: { ticks: { color: '#9CA3AF' }, grid: { color: '#374151' } },
-                y: { ticks: { color: '#9CA3AF', stepSize: 1 }, grid: { color: '#374151' } }
+                x: { ticks: { color: '#000000' }, grid: { color: '#374151' } },
+                y: { ticks: { color: '#000000', stepSize: 1 }, grid: { color: '#374151' } }
             }
         }
     });
@@ -159,8 +159,8 @@
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-                x: { ticks: { color: '#9CA3AF', stepSize: 1 }, grid: { color: '#374151' } },
-                y: { ticks: { color: '#9CA3AF' }, grid: { color: '#374151' } }
+                x: { ticks: { color: '#000000', stepSize: 1 }, grid: { color: '#374151' } },
+                y: { ticks: { color: '#000000' }, grid: { color: '#374151' } }
             }
         }
     });

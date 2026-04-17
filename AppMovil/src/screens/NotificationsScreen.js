@@ -29,7 +29,6 @@ const NotificationsScreen = () => {
                 return;
             }
 
-            // 2. Llamamos a nuestra nueva ruta pasándole el correo
             const response = await fetch(`${API_URL}/api/notificaciones/usuario/email/${storedEmail}`);
             const data = await response.json();
 
@@ -97,22 +96,18 @@ const NotificationsScreen = () => {
         if (filtroActivo === 'todas') return true;
 
         if (filtroActivo === 'nuevas') {
-            // Asegúrate de usar el nombre exacto de la columna de fecha que manda tu backend
-            // Puede ser item.fecha_creacion, item.fecha, item.created_at, etc.
+
             const fechaBackend = item.fecha_creacion;
 
-            if (!fechaBackend) return false; // Si por alguna razón no trae fecha, no la mostramos
+            if (!fechaBackend) return false;
 
             const fechaNotificacion = new Date(fechaBackend);
             const fechaActual = new Date();
 
-            // La resta nos da la diferencia en milisegundos
             const diferenciaMilisegundos = fechaActual - fechaNotificacion;
 
-            // Convertimos los milisegundos a días (1000 ms * 60 seg * 60 min * 24 hrs)
             const diferenciaDias = diferenciaMilisegundos / (1000 * 60 * 60 * 24);
 
-            // Solo pasará el filtro si tiene estrictamente menos de 2 días de antigüedad
             return diferenciaDias < 2;
         }
 
@@ -125,7 +120,7 @@ const NotificationsScreen = () => {
 
     const renderItem = ({ item }) => {
         const iconConfig = getIcono(item.tipo);
-        const idNotificacion = item.id_notificacion || item.id; // Tomamos el ID correcto
+        const idNotificacion = item.id_notificacion || item.id;
 
         return (
             <TouchableOpacity
@@ -144,7 +139,6 @@ const NotificationsScreen = () => {
                     <Text style={styles.tiempoTexto}>{item.tiempo}</Text>
                 </View>
 
-                {/* NUEVO: BOTÓN DE ELIMINAR */}
                 <TouchableOpacity
                     style={styles.deleteButton}
                     onPress={() => confirmarEliminacion(idNotificacion)}
@@ -171,7 +165,6 @@ const NotificationsScreen = () => {
                 </TouchableOpacity>
             </View>
 
-            {/* 3. BARRA DE FILTROS (TABS) */}
             <View style={styles.filterContainer}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
                     <TouchableOpacity
@@ -198,13 +191,11 @@ const NotificationsScreen = () => {
             </View>
 
             <FlatList
-                // 4. PASAMOS EL ARREGLO FILTRADO A LA LISTA
                 data={notificacionesFiltradas}
                 keyExtractor={(item) => (item.id ? item.id.toString() : Math.random().toString())}
                 renderItem={renderItem}
                 contentContainerStyle={styles.listContainer}
                 showsVerticalScrollIndicator={false}
-                // Si el filtro no arroja resultados, mostramos este mensaje
                 ListEmptyComponent={<Text style={styles.emptyText}>No hay notificaciones en esta categoría.</Text>}
                 refreshControl={
                     <RefreshControl

@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; }</style>
 </head>
-<body class="bg-gray-800 min-h-screen flex items-center justify-center">
+<body class="bg-white min-h-screen flex items-center justify-center">
     <div class="w-full max-w-md px-4">
         <div class="bg-gray-50 rounded-2xl p-8 shadow-xl">
             <div class="flex flex-col items-center mb-6">

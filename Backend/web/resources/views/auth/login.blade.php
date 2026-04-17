@@ -8,21 +8,19 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; }</style>
 </head>
-<body class="bg-gray-800 min-h-screen flex items-center justify-center">
+<body class="bg-white min-h-screen flex items-center justify-center">
     <div class="w-full max-w-md px-4">
         <div class="bg-gray-50 rounded-2xl p-8 shadow-xl">
 
             <!-- Logo -->
             <div class="flex flex-col items-center mb-8">
-                <div class="w-16 h-16 bg-gray-700 rounded-2xl flex items-center justify-center mb-4">
-                    <svg class="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                    </svg>
-                </div>
+                <div class="flex flex-col items-center mb-8">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo AutoExec" class="w-24 h-auto mb-4">
                 <h1 class="text-2xl font-bold text-gray-900">AutoExec</h1>
+                </div>
                 <p class="text-sm text-gray-500 text-center mt-1">
                     Sistema de Gestión de Personal<br>
-                    Industria Automotriz - Alto Mando
+                    Industria Automotriz
                 </p>
             </div>
 
@@ -49,7 +47,6 @@
                 </div>
                 <div class="flex items-center justify-between mb-6">
                     <label class="flex items-center gap-2 text-sm text-gray-600">
-                        <input type="checkbox" class="rounded"> Recordarme
                     </label>
                     <a href="/recuperar-password" class="text-sm text-blue-600 hover:underline">¿Olvidaste tu contraseña?</a>
                 </div>
