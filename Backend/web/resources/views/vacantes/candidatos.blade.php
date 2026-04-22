@@ -7,9 +7,9 @@
 
     <!-- Header -->
     <div class="flex items-center gap-3 mb-8">
-        <a href="{{ route('vacantes.index') }}" class="text-gray-400 hover:text-white transition">← Volver</a>
+        <a href="{{ route('vacantes.index') }}" class="text-gray-400 hover:text-blue transition">← Volver</a>
         <div>
-            <h1 class="text-2xl font-bold text-white">Candidatos postulados</h1>
+            <h1 class="text-2xl font-bold text-blue-800">Candidatos postulados</h1>
             <p class="text-gray-400 text-sm mt-1">{{ $vacante['titulo'] }} · {{ count($candidatos) }} candidato(s)</p>
         </div>
     </div>
@@ -21,12 +21,12 @@
     @endif
 
     @forelse($candidatos as $candidato)
-    <div class="bg-gray-800 border border-gray-700 rounded-xl p-6 mb-4">
+    <div class="bg-blue-900 border border-gray-700 rounded-xl p-6 mb-4">
 
         <!-- Info principal -->
         <div class="flex items-start justify-between gap-4">
             <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-red-900 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
                     {{ strtoupper(substr($candidato['perfil']['nombre'] ?? 'U', 0, 1)) }}
                 </div>
                 <div>
@@ -58,18 +58,18 @@
 
         <!-- Detalles del perfil -->
         @if($candidato['perfil'])
-        <div class="mt-6 grid grid-cols-3 gap-4 border-t border-gray-700 pt-4">
+        <div class="mt-6 grid grid-cols-3 gap-4 border-t border-white pt-5">
             <div>
-                <p class="text-gray-500 text-xs">Teléfono</p>
-                <p class="text-gray-300 text-sm">{{ $candidato['perfil']['telefono'] ?? '—' }}</p>
+                <p class="text-white text-xs">Teléfono</p>
+                <p class="text-white text-sm">{{ $candidato['perfil']['telefono'] ?? '—' }}</p>
             </div>
             <div>
-                <p class="text-gray-500 text-xs">Experiencia</p>
-                <p class="text-gray-300 text-sm">{{ $candidato['perfil']['experiencia_anios'] ?? '0' }} años</p>
+                <p class="text-white text-xs">Experiencia</p>
+                <p class="text-white text-sm">{{ $candidato['perfil']['experiencia_anios'] ?? '0' }} años</p>
             </div>
             <div>
-                <p class="text-gray-500 text-xs">Ubicación</p>
-                <p class="text-gray-300 text-sm">{{ $candidato['perfil']['ubicacion'] ?? '—' }}</p>
+                <p class="text-white text-xs">Ubicación</p>
+                <p class="text-white text-sm">{{ $candidato['perfil']['ubicacion'] ?? '—' }}</p>
             </div>
         </div>
 
@@ -82,13 +82,13 @@
 
         <!-- Certificaciones -->
         @if(!empty($candidato['perfil']['certificaciones']))
-        <div class="mt-4 border-t border-gray-700 pt-4">
-            <p class="text-gray-500 text-xs mb-3">Certificaciones</p>
+        <div class="mt-4 border-t border-white pt-5">
+            <p class="text-white text-xs mb-3">Certificaciones</p>
             <div class="flex flex-wrap gap-2">
                 @foreach($candidato['perfil']['certificaciones'] as $cert)
-                <div class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2">
-                    <p class="text-white text-xs font-medium">{{ $cert['nombre'] }}</p>
-                    <p class="text-gray-400 text-xs">{{ $cert['institucion'] }} {{ $cert['anio'] ? '· '.$cert['anio'] : '' }}</p>
+                <div class="bg-white border border-gray-600 rounded-lg px-3 py-2">
+                    <p class="text-black text-xs font-medium">{{ $cert['nombre'] }}</p>
+                    <p class="text-black text-xs">{{ $cert['institucion'] }} {{ $cert['anio'] ? '· '.$cert['anio'] : '' }}</p>
                 </div>
                 @endforeach
             </div>
@@ -97,7 +97,7 @@
         @endif
 
         <div class="mt-3">
-            <p class="text-gray-500 text-xs">
+            <p class="text-white text-xs">
                 Postulado el {{ \Carbon\Carbon::parse($candidato['fecha_postulacion'])->format('d/m/Y H:i') }}
             </p>
         </div>

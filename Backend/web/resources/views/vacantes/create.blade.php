@@ -6,11 +6,11 @@
 <div class="p-6 max-w-3xl">
 
     <div class="flex items-center gap-3 mb-8">
-        <a href="{{ route('vacantes.index') }}" class="text-gray-400 hover:text-white transition">
+        <a href="{{ route('vacantes.index') }}" class="text-gray-400 hover:text-black transition">
             ← Volver
         </a>
         <div>
-            <h1 class="text-2xl font-bold text-white">Nueva Vacante</h1>
+            <h1 class="text-2xl font-bold text-black">Nueva Vacante</h1>
             <p class="text-gray-400 text-sm mt-1">Completa los datos para publicar una nueva vacante</p>
         </div>
     </div>
@@ -24,20 +24,20 @@
     <form method="POST" action="{{ route('vacantes.store') }}">
         @csrf
 
-        <div class="bg-gray-800 border border-gray-700 rounded-xl p-6 space-y-6">
+        <div class="bg-blue-700 border border-gray-700 rounded-xl p-6 space-y-6">
 
             <div>
                 <label class="block text-sm font-medium text-gray-300 mb-2">Título del puesto *</label>
                 <input type="text" name="titulo" value="{{ old('titulo') }}"
                     placeholder="Ej. Ingeniero de Calidad Sr."
-                    class="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-4 py-3 focus:outline-none focus:border-red-500 placeholder-gray-500">
+                    class="w-full bg-white border border-gray-600 text-black text-sm rounded-lg px-4 py-3 focus:outline-none focus:border-red-500 placeholder-gray-500">
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-300 mb-2">Descripción *</label>
                 <textarea name="descripcion" rows="4"
                     placeholder="Describe las responsabilidades y requisitos del puesto..."
-                    class="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-4 py-3 focus:outline-none focus:border-red-500 placeholder-gray-500">{{ old('descripcion') }}</textarea>
+                    class="w-full bg-white border border-gray-600 text-black text-sm rounded-lg px-4 py-3 focus:outline-none focus:border-red-500 placeholder-gray-500">{{ old('descripcion') }}</textarea>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -45,12 +45,12 @@
                     <label class="block text-sm font-medium text-gray-300 mb-2">Salario ofrecido (MXN) *</label>
                     <input type="number" name="salario_ofrecido" value="{{ old('salario_ofrecido') }}"
                         placeholder="Ej. 35000"
-                        class="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-4 py-3 focus:outline-none focus:border-red-500 placeholder-gray-500">
+                        class="w-full bg-white border border-gray-600 text-black text-sm rounded-lg px-4 py-3 focus:outline-none focus:border-red-500 placeholder-gray-500">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-2">Nivel de inglés *</label>
                     <select name="nivel_ingles"
-                        class="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-4 py-3 focus:outline-none focus:border-red-500">
+                        class="w-full bg-white border border-gray-600 text-black text-sm rounded-lg px-4 py-3 focus:outline-none focus:border-red-500">
                         <option value="">Seleccionar...</option>
                         <option value="Básico" {{ old('nivel_ingles') == 'Básico' ? 'selected' : '' }}>Básico</option>
                         <option value="Intermedio" {{ old('nivel_ingles') == 'Intermedio' ? 'selected' : '' }}>Intermedio</option>
@@ -65,12 +65,12 @@
                     <label class="block text-sm font-medium text-gray-300 mb-2">Ubicación *</label>
                     <input type="text" name="ubicacion" value="{{ old('ubicacion') }}"
                         placeholder="Ej. Parque Industrial Querétaro"
-                        class="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-4 py-3 focus:outline-none focus:border-red-500 placeholder-gray-500">
+                        class="w-full bg-white border border-gray-600 text-black text-sm rounded-lg px-4 py-3 focus:outline-none focus:border-red-500 placeholder-gray-500">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-2">Modalidad *</label>
                     <select name="modalidad"
-                        class="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-4 py-3 focus:outline-none focus:border-red-500">
+                        class="w-full bg-white border border-gray-600 text-black text-sm rounded-lg px-4 py-3 focus:outline-none focus:border-red-500">
                         <option value="">Seleccionar...</option>
                         <option value="Presencial" {{ old('modalidad') == 'Presencial' ? 'selected' : '' }}>Presencial</option>
                         <option value="Híbrido" {{ old('modalidad') == 'Híbrido' ? 'selected' : '' }}>Híbrido</option>
@@ -83,7 +83,7 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-2">Departamento *</label>
                     <select name="id_departamento"
-                        class="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-4 py-3 focus:outline-none focus:border-red-500">
+                        class="w-full bg-white border border-gray-600 text-black text-sm rounded-lg px-4 py-3 focus:outline-none focus:border-red-500">
                         <option value="">Seleccionar departamento...</option>
                         @foreach($departamentos as $dep)
                             <option value="{{ $dep['id_departamento'] }}" {{ old('id_departamento') == $dep['id_departamento'] ? 'selected' : '' }}>
@@ -95,14 +95,14 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-2">Fecha de cierre *</label>
                     <input type="date" name="fecha_cierre" value="{{ old('fecha_cierre') }}"
-                        class="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-4 py-3 focus:outline-none focus:border-red-500">
+                        class="w-full bg-white border border-gray-600 text-black text-sm rounded-lg px-4 py-3 focus:outline-none focus:border-red-500">
                 </div>
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-300 mb-2">Estado</label>
                 <select name="estado"
-                    class="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-4 py-3 focus:outline-none focus:border-red-500">
+                    class="w-full bg-white border border-gray-600 text-black text-sm rounded-lg px-4 py-3 focus:outline-none focus:border-red-500">
                     <option value="Activa" {{ old('estado', 'Activa') == 'Activa' ? 'selected' : '' }}>Activa</option>
                     <option value="Inactiva" {{ old('estado') == 'Inactiva' ? 'selected' : '' }}>Inactiva</option>
                     <option value="Cerrada" {{ old('estado') == 'Cerrada' ? 'selected' : '' }}>Cerrada</option>
@@ -116,7 +116,7 @@
                 class="bg-red-700 hover:bg-red-600 text-white font-medium px-6 py-3 rounded-lg transition text-sm">
                 Publicar vacante
             </button>
-            <a href="{{ route('vacantes.index') }}" class="text-gray-400 hover:text-white text-sm transition">
+            <a href="{{ route('vacantes.index') }}" class="text-gray-400 hover:text-black text-sm transition">
                 Cancelar
             </a>
         </div>

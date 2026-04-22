@@ -8,7 +8,7 @@
     <!-- Header -->
     <div class="flex items-center justify-between mb-8">
         <div>
-            <h1 class="text-2xl font-bold text-white">Notificaciones</h1>
+            <h1 class="text-2xl font-bold text-black">Notificaciones</h1>
             <p class="text-gray-400 text-sm mt-1">
                 {{ $noLeidas }} sin leer · {{ count($notificaciones) }} en total
             </p>
@@ -27,7 +27,7 @@
                 onsubmit="return confirm('¿Eliminar todas las notificaciones leídas?')">
                 @csrf @method('DELETE')
                 <button type="submit"
-                    class="text-sm bg-red-900 hover:bg-red-800 text-red-300 px-4 py-2 rounded-lg transition">
+                    class="text-sm bg-red-900 hover:bg-red-800 text-white px-4 py-2 rounded-lg transition">
                     Eliminar leídas
                 </button>
             </form>
@@ -37,7 +37,7 @@
     <!-- Lista -->
     <div class="space-y-3">
         @forelse($notificaciones as $notif)
-        <div class="bg-gray-800 border {{ !$notif['leida'] ? 'border-red-700' : 'border-gray-700' }} rounded-xl p-4 flex items-start justify-between gap-4">
+        <div class="bg-blue-800 border {{ !$notif['leida'] ? 'border-blue-700' : 'border-gray-700' }} rounded-xl p-4 flex items-start justify-between gap-4">
             <div class="flex items-start gap-3 flex-1">
                 <!-- Icono tipo -->
                 <div class="mt-1 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0
@@ -67,13 +67,13 @@
                             <span class="bg-red-700 text-white text-xs px-2 py-0.5 rounded-full">Nueva</span>
                         @endif
                         <span class="text-xs px-2 py-0.5 rounded-full
-                            {{ $notif['tipo'] === 'vacante' ? 'bg-blue-900 text-blue-300' : '' }}
-                            {{ $notif['tipo'] === 'postulacion' ? 'bg-purple-900 text-purple-300' : '' }}
+                            {{ $notif['tipo'] === 'vacante' ? 'bg-blue-900 text-white' : '' }}
+                            {{ $notif['tipo'] === 'postulacion' ? 'bg-purple-900 text-white' : '' }}
                             {{ !in_array($notif['tipo'], ['vacante','postulacion']) ? 'bg-gray-700 text-gray-400' : '' }}
                         ">{{ $notif['tipo'] }}</span>
                     </div>
                     <p class="text-gray-400 text-sm mt-1">{{ $notif['mensaje'] }}</p>
-                    <p class="text-gray-500 text-xs mt-2">
+                    <p class="text-gray-200 text-xs mt-2">
                         {{ \Carbon\Carbon::parse($notif['fecha_envio'])->format('d/m/Y H:i') }}
                     </p>
                 </div>
