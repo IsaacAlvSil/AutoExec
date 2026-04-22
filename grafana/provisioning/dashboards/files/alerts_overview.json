@@ -1,0 +1,31 @@
+{
+  "annotations": { "list": [ { "builtIn": 1, "datasource": "-- GraphicWalker --", "enable": true, "hide": true, "iconColor": "rgba(0, 211, 255, 1)", "name": "Annotations & Alerts", "type": "dashboard" } ] },
+  "editable": true,
+  "panels": [
+    {
+      "datasource": "Prometheus",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "targets": [ { "datasource": "Prometheus", "expr": "ALERTS{alertstate=\"firing\"}", "legendFormat": "{{alertname}}", "refId": "A" } ],
+      "title": "Alertas Activas (Fuego)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 10 },
+      "id": 2,
+      "options": { "showCommonLabels": true, "showTime": true, "sortOrder": "Descending" },
+      "targets": [ { "datasource": "Prometheus", "expr": "ALERTS_FOR_STATE", "refId": "A" } ],
+      "title": "Historial de Alertas",
+      "type": "table"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 36,
+  "style": "dark",
+  "tags": [ "alerts" ],
+  "title": "AutoExec: Estado de Alertas (Alertmanager)",
+  "uid": "alerts-overview",
+  "version": 1
+}

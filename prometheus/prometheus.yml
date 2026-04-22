@@ -3,7 +3,12 @@ global:
   evaluation_interval: 15s
   external_labels:
     monitor: 'autoexec-monitor'
-    replica: 'prometheus-1'
+
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets:
+      - alertmanager:9093
 
 rule_files:
   - "alert_rules.yml"
@@ -12,18 +17,10 @@ scrape_configs:
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
-    scrape_interval: 5s
-    metrics_path: '/metrics'
 
   - job_name: 'autoexec-api'
     static_configs:
-      - targets: ['api:8000']
-    metrics_path: '/metrics'
-    scrape_interval: 10s
-
-  - job_name: 'autoexec-web'
-    static_configs:
-      - targets: ['web:8080']
+      - targets: ['api1:8000', 'api2:8000']
     metrics_path: '/metrics'
     scrape_interval: 10s
 
@@ -37,27 +34,41 @@ scrape_configs:
       - targets: ['node_exporter:9100']
     scrape_interval: 10s
 
-  - job_name: 'traefik'
+  - job_name: 'haproxy'
     static_configs:
-      - targets: ['traefik:8080']
-    metrics_path: '/metrics'
+      - targets: ['haproxy:8405']
+    scrape_interval: 10s
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 10s
+
+  - job_name: 'crowdsec'
+    static_configs:
+      - targets: ['crowdsec:6060']
     scrape_interval: 10s
 
   - job_name: 'redis'
     static_configs:
-      - targets: ['redis:6379']
+      - targets: ['redis_exporter:9121']
     scrape_interval: 10s
 
-alerting:
-  alertmanagers:
-    - static_configs:
-        - targets:
-          - alertmanager:9093
-
-# Remote write configuration for Loki
-remote_write:
-  - url: "http://loki:3100/loki/api/v1/push"
-    queue_config:
-      max_samples_per_send: 1000
-      max_shards: 200
-      capacity: 10000
+  - job_name: 'alertmanager'
+    static_configs:
+      - targets: ['alertmanager:9093']
+    scrape_interval: 10s
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+        - http://web:80
+        - http://nginx:80
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox_exporter:9115

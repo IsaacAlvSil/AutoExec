@@ -1,0 +1,59 @@
+{
+  "annotations": { "list": [ { "builtIn": 1, "datasource": "-- GraphicWalker --", "enable": true, "hide": true, "iconColor": "rgba(0, 211, 255, 1)", "name": "Annotations & Alerts", "type": "dashboard" } ] },
+  "editable": true,
+  "panels": [
+    {
+      "datasource": "${datasource}",
+      "fieldConfig": { "defaults": { "mappings": [ { "options": { "0": { "color": "red", "index": 1, "text": "CAÍDO (DOWN)" }, "1": { "color": "green", "index": 0, "text": "ACTIVO (UP)" } }, "type": "value" } ], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] } } },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": "${datasource}", "expr": "probe_success{instance=\"http://web:80\"}", "refId": "A" } ],
+      "title": "Estado de la Web (Laravel)",
+      "type": "stat"
+    },
+    {
+      "datasource": "${datasource}",
+      "fieldConfig": { "defaults": { "mappings": [ { "options": { "0": { "color": "red", "index": 1, "text": "ERROR" }, "1": { "color": "green", "index": 0, "text": "OK" } }, "type": "value" } ] } },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": "${datasource}", "expr": "probe_success{instance=\"http://nginx:80\"}", "refId": "A" } ],
+      "title": "Salud del Balanceador (Nginx)",
+      "type": "stat"
+    },
+    {
+      "datasource": "${datasource}",
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 6 },
+      "id": 3,
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "targets": [ { "datasource": "${datasource}", "expr": "probe_duration_seconds", "legendFormat": "{{instance}}", "refId": "A" } ],
+      "title": "Tiempo de Respuesta (Latencia)",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 36,
+  "style": "dark",
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": false, "text": "Prometheus", "value": "Prometheus" },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Datasource",
+        "multi": false,
+        "name": "datasource",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "skipUrl": false,
+        "type": "datasource"
+      }
+    ]
+  },
+  "uid": "web-uptime",
+  "version": 1
+}
