@@ -109,15 +109,23 @@ const HomeScreen = ({ navigation }) => {
 
                 <View style={styles.greetingSection}>
                     <View>
-                        {/*variable userName */}
                         <Text style={styles.greetingText}>Hola, {userName}</Text>
                         <Text style={styles.subtitleText}>Tu radar ejecutivo está activo</Text>
                     </View>
-                    <View style={styles.avatarContainer}>
-                        <TouchableOpacity>
-                            {/* variable userInitials */}
-                            <Text onPress={() => navigation.navigate('Perfil')} style={styles.avatarText}>{userInitials}</Text>
+                    <View style={styles.headerActions}>
+                        <TouchableOpacity 
+                            style={styles.qrButton}
+                            onPress={() => navigation.navigate('QRScanner')}
+                        >
+                            <Ionicons name="qr-code-outline" size={20} color="#FFF" />
+                            <Text style={styles.qrButtonText}>Escanear QR</Text>
                         </TouchableOpacity>
+                        <View style={styles.avatarContainer}>
+                            <TouchableOpacity>
+                                {/* variable userInitials */}
+                                <Text onPress={() => navigation.navigate('Perfil')} style={styles.avatarText}>{userInitials}</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
 
@@ -236,6 +244,25 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 18,
         fontWeight: 'bold',
+    },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    qrButton: {
+        backgroundColor: '#6366F1',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+        borderRadius: 25,
+        marginRight: 15,
+    },
+    qrButtonText: {
+        color: '#FFF',
+        fontSize: 14,
+        fontWeight: 'bold',
+        marginLeft: 8,
     },
     metricsRow: {
         flexDirection: 'row',

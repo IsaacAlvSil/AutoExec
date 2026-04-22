@@ -32,15 +32,22 @@ const LoginScreen = ({ navigation, onLogin }) => {
                 })
             });
 
-            const data = await response.json();
+            let data;
+            try {
+                const text = await response.text();
+                data = text ? JSON.parse(text) : {};
+            } catch (error) {
+                console.error('Error parsing JSON:', error);
+                data = {};
+            }
 
             if (response.ok) {
                 await AsyncStorage.setItem('user_email', email);
-                await AsyncStorage.setItem('user_id', data.usuario.id_usuario.toString());
+                await AsyncStorage.setItem('user_id', data.usuario?.id_usuario?.toString() || '');
                 Alert.alert('¡Éxito!', 'Sesión iniciada correctamente');
                 if (onLogin) onLogin(data);
             } else {
-                Alert.alert('Error', data.detail || 'Credenciales incorrectas');
+                Alert.alert('Error', data.detail || data.message || 'Credenciales incorrectas');
             }
         } catch (error) {
             Alert.alert(

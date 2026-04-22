@@ -13,6 +13,7 @@ import DVacante from '../screens/DVacante';
 import VacantesScreen from '../screens/VacantesScreen';
 import RadarScreen from '../screens/RadarScreen';
 import RecoverPasswordScreen from '../screens/RecoverPasswordScreen';
+import QRScannerScreen from '../screens/QRScannerScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -83,6 +84,17 @@ export default function AppNavigation({ isLoggedIn, onLogin, onLogout }) {
                             headerStyle: { backgroundColor: '#0F172A' },
                             headerTintColor: '#fff',
                             headerBackTitleVisible: false
+                        }}
+                    />
+
+                    <Stack.Screen
+                        name="QRScanner"
+                        component={QRScannerScreen}
+                        options={{
+                            headerShown: true,
+                            title: 'Escáner QR',
+                            headerStyle: { backgroundColor: '#6366F1' },
+                            headerTintColor: '#fff'
                         }}
                     />
                 </>

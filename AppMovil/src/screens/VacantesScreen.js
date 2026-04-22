@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Platform, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { API_URL } from '../config';
-
-//pruebasWeb
-
 import API_URL from '../config';
 
 const VacantesScreen = ({ navigation }) => {

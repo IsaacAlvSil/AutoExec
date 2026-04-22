@@ -2,19 +2,27 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
+import time
 
-# Toma la URL de conexión de Docker o usa esta por defecto
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://admin:123456@db:5432/automotriz_db")
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://admin:password123@postgres:5432/autoexec"
+)
 
-# Crea el "motor" que se conecta a la BD
-engine = create_engine(DATABASE_URL)
+# Esperar a que PostgreSQL esté listo
+for i in range(15):
+    try:
+        engine = create_engine(DATABASE_URL)
+        conn = engine.connect()
+        print("✅ Conectado a PostgreSQL")
+        conn.close()
+        break
+    except Exception as e:
+        print(f"⏳ Esperando PostgreSQL... intento {i+1}/15")
+        time.sleep(3)
 
-# Crea la fábrica de sesiones para cada petición que reciba la API
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Clase base de la que heredarán nuestros modelos
 Base = declarative_base()
-
 
 def get_db():
     db = SessionLocal()

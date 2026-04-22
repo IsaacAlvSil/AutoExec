@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from data.db import engine
+from prometheus_fastapi_instrumentator import Instrumentator
 from models import models
 from routers import vacantes, auth, estadisticas
 from routers import perfiles_router, notificaciones, postulaciones, certificaciones, departamentos
@@ -26,3 +27,5 @@ def read_root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy", "service": "FastAPI"}
+
+Instrumentator().instrument(app).expose(app)
