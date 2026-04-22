@@ -1,74 +1,76 @@
-# 🚗 AutoExec - Sistema de Gestión e Infraestructura
+# AutoExec - Sistema de Gestion e Infraestructura
 
-Bienvenido al repositorio central de **AutoExec**. Este proyecto integra una API robusta, una plataforma web de gestión, una aplicación móvil y un stack completo de monitoreo y seguridad mediante contenedores Docker.
+Este repositorio contiene la arquitectura completa del proyecto AutoExec, integrando servicios de backend, aplicacion web, aplicacion movil y una infraestructura de monitoreo y seguridad basada en Docker.
 
 ---
 
-## 📂 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```text
 AutoExec/
-├── AppMovil/               # Aplicación Móvil (Expo + React Native)
-├── Backend/                # Núcleo del Sistema
-│   ├── main.py             # API principal (FastAPI)
-│   ├── web/                # Aplicación Web (Laravel)
-│   └── ...
-├── docker-compose.yml      # Orquestación de servicios (Docker)
-├── nginx/                  # Configuración de Servidor Web y Proxy
-├── haproxy/                # Balanceador de carga de APIs
-├── grafana/                # Dashboards de Monitoreo
-├── prometheus/             # Recolección de métricas
-├── loki/                   # Gestión de logs
-├── promtail/               # Agente de recolección de logs
-└── crowdsec/               # Seguridad y Firewall Dinámico
+├── AppMovil/               # Aplicacion movil desarrollada con Expo y React Native
+├── Backend/                # Directorio principal de servicios de backend
+│   ├── main.py             # API principal construida con FastAPI (Python)
+│   ├── web/                # Aplicacion de gestion web construida con Laravel (PHP)
+│   ├── models/             # Definiciones de modelos de datos
+│   ├── routers/            # Endpoints y logica de rutas de la API
+│   ├── security/           # Configuracion de autenticacion y seguridad
+│   └── data/               # Scripts de gestion de datos y base de datos
+├── autoExec/               # Archivos de soporte y configuracion del sistema
+├── crowdsec/               # Configuracion de seguridad y firewall dinamico
+├── grafana/                # Dashboards y visualizacion de metricas (Observabilidad)
+├── haproxy/                # Configuracion del balanceador de carga para las APIs
+├── loki/                   # Sistema de agregacion de logs
+├── nginx/                  # Servidor web principal y proxy inverso
+├── prometheus/             # Sistema de recoleccion de metricas y alertas
+├── promtail/               # Agente para el envio de logs a Loki
+├── scripts/                # Utilidades y scripts de automatizacion
+├── docker-compose.yml      # Orquestacion definitiva de todos los servicios
+└── targets.json            # Configuracion de discovery para Prometheus
 ```
 
 ---
 
-## 🛠️ Requisitos Generales
+## Requisitos del Sistema
 
-Para ejecutar el proyecto completo, se recomienda el uso de **Docker**. Si deseas ejecutar componentes por separado, necesitarás:
+Para la ejecucion completa mediante contenedores:
+- Docker Engine (v24.0+)
+- Docker Compose (v2.0+)
 
-- **Docker & Docker Compose** (Recomendado)
-- **Node.js:** v20+ & **NPM:** v10+ (Para App Móvil)
-- **Python:** 3.11+ (Para Backend FastAPI)
-- **PHP:** 8.2+ & **Composer:** 2+ (Para Backend Web Laravel)
-- **Base de Datos:** PostgreSQL 15+ (Incluido en Docker)
+Para desarrollo local (sin Docker):
+- Node.js (v20+) y NPM (v10+)
+- Python (3.11+)
+- PHP (8.2+) y Composer (2.0+)
+- PostgreSQL (15+)
 
 ---
 
-## 🚀 Guía de Inicio Rápido (Docker)
+## Guia de Ejecucion
 
-La forma más sencilla de levantar todo el ecosistema (Base de datos, APIs, Web y Monitoreo) es usando Docker Compose:
+### Metodo Recomendado: Docker Compose
+
+Este comando levantara la base de datos, las APIs, la web, el sistema de balanceo y todo el stack de monitoreo de forma automatica.
 
 ```bash
-# 1. Clonar el repositorio
-git clone https://github.com/IsaacAlvSil/AutoExec.git
-cd AutoExec
-
-# 2. Levantar todos los servicios
+# Construir e iniciar todos los servicios en segundo plano
 docker compose up -d --build
 
-# 3. Verificar que todo esté corriendo
+# Verificar que todos los servicios esten activos y saludables
 docker compose ps
 ```
 
----
+### Ejecucion Individual de Componentes
 
-## 🔧 Ejecución por Componentes
-
-### 1. Backend (API FastAPI)
-Ubicado en la raíz de `Backend/`.
+#### 1. Backend (FastAPI)
+Ejecuta la API de servicios principal.
 ```bash
 cd Backend
-python -m venv venv
-source venv/bin/activate  # venv\Scripts\activate en Windows
 pip install -r requirements.txt
 python main.py
 ```
 
-### 2. App Web (Laravel)
-Ubicado en `Backend/web/`.
+#### 2. App Web (Laravel)
+Ejecuta la interfaz de administracion web.
 ```bash
 cd Backend/web
 composer install
@@ -78,50 +80,53 @@ php artisan migrate --seed
 php artisan serve
 ```
 
-### 3. App Móvil (React Native)
-Ubicado en `AppMovil/`.
+#### 3. App Movil (Expo)
+Ejecuta la aplicacion para dispositivos moviles.
 ```bash
 cd AppMovil
 npm install
-# Ajusta el API_URL en src/config.js con tu IP local
+# Nota: Es necesario configurar la IP del backend en AppMovil/src/config.js
 npx expo start
 ```
 
 ---
 
-## 📊 Monitoreo y Observabilidad
+## Servicios de Monitoreo y Acceso
 
-El proyecto incluye un stack de monitoreo listo para usar:
+Una vez desplegado con Docker, los siguientes servicios estaran disponibles:
 
-- **Grafana:** [http://localhost:3000](http://localhost:3000) (Admin / admin123)
-- **Prometheus:** [http://localhost:9090](http://localhost:9090)
-- **Portainer:** [http://localhost:9000](http://localhost:9000) (Gestión de contenedores)
+- Interfaz Web Principal: http://localhost:80
+- API Gateway (HAProxy): http://localhost:8000
+- Panel de Monitoreo (Grafana): http://localhost:3000 (Credenciales: admin / admin123)
+- Metricas (Prometheus): http://localhost:9090
+- Gestion de Contenedores (Portainer): http://localhost:9000
 
 ---
 
-## 🌐 Variables de Entorno Mínimas
+## Configuracion de Variables de Entorno
 
-### Web (Backend/web/.env)
-```env
-DB_CONNECTION=pgsql
-DB_HOST=postgres
-DB_PORT=5432
-DB_DATABASE=autoexec
-API_BASE_URL=http://api1:8000
+### Backend Web (.env)
+Es fundamental configurar las siguientes variables para la conexion con la base de datos y la API:
+- DB_HOST: postgres (nombre del servicio en Docker)
+- DB_DATABASE: autoexec
+- API_BASE_URL: http://api1:8000
+
+### App Movil (config.js)
+Actualizar la constante API_URL con la direccion IP de la maquina host para permitir la conexion desde dispositivos fisicos o emuladores.
+
+---
+
+## Mantenimiento y Logs
+
+Para visualizar el estado de los servicios en tiempo real:
+```bash
+docker compose logs -f
 ```
 
-### Móvil (AppMovil/src/config.js)
-```javascript
-const API_URL = 'http://[TU_IP_LOCAL]:8000';
+Para reiniciar un servicio especifico tras un cambio:
+```bash
+docker compose restart [nombre_del_servicio]
 ```
 
 ---
-
-## 📋 Validación Recomendada
-
-Antes de realizar cambios significativos, asegúrate de que el stack de Docker sea estable:
-- Revisa los logs: `docker compose logs -f`
-- Verifica la salud de la DB: `docker exec -it autoexec_postgres pg_isready`
-
----
-*Desarrollado por el equipo de AutoExec.*
+Documentacion generada para el equipo de desarrollo de AutoExec.
